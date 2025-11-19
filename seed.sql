@@ -1,3 +1,13 @@
+CREATE TABLE IF NOT EXISTS catalogo_productos (
+    id_catalogo SERIAL PRIMARY KEY,
+    store_id INT NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    description TEXT,
+    precio DECIMAL(10, 2) NOT NULL,
+    stock INT NOT NULL,
+    duracion_minutos INT NOT NULL
+);
+
 INSERT INTO catalogo_productos (store_id, nombre, description, precio, stock, duracion_minutos) VALUES
 (1, 'Café Americano', 'Café recién preparado, suave y aromático', 35.00, 100, 5),
 (1, 'Café Latte', 'Espresso con leche vaporizada', 45.00, 100, 7),
