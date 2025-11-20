@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS catalogo_productos (
+CREATE TABLE catalogo_productos (
     id_catalogo SERIAL PRIMARY KEY,
     store_id INT NOT NULL,
     nombre VARCHAR(255) NOT NULL,
