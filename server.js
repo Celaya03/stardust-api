@@ -424,4 +424,26 @@ app.listen(PORT, () => {
   console.log(`📍 http://localhost:${PORT}`);
 });
 
+app.get('/docs', (req, res) => {
+  res.send('Documentación no disponible aquí. Revisa el README.md o el endpoint raíz "/"');
+});
+
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Stardust Cafetería API',
+      version: '1.0.0',
+    },
+  },
+  apis: ['./server.js'], // o donde tengas tus rutas
+});
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
+
 module.exports = app;
