@@ -28,3 +28,18 @@ coverage/
 # Build
 dist/
 build/
+/.vs/stardust-api/copilot-chat/d8128149/sessions/dcc821c7-bc38-4726-bdd3-1166334fb0a9
+/.vs/stardust-api/CopilotIndices/17.13.449.12402/CodeChunks.db
+/.vs/stardust-api/CopilotIndices/17.13.449.12402/CodeChunks.db-wal
+/.vs/stardust-api/CopilotIndices/17.13.449.12402/CodeChunks.db-shm
+/.vs/stardust-api/CopilotIndices/17.13.449.12402/SemanticSymbols.db-wal
+/.vs/stardust-api/CopilotIndices/17.13.449.12402/SemanticSymbols.db
+/.vs/stardust-api/CopilotIndices/17.13.449.12402/SemanticSymbols.db-shm
+/.vs/stardust-api/FileContentIndex/4fe18da2-bfbc-46d7-9d37-193b96325817.vsidx
+/.vs/stardust-api/FileContentIndex/ed55d95a-3f4a-4f1e-af87-62f84e67ebae.vsidx
+/.vs/stardust-api/v17/.wsuo
+/.vs/stardust-api/v17/DocumentLayout.json
+*.sqlite
+*.sqlite-journal
+*.json
+*.vsidx
