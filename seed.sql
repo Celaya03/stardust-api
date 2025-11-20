@@ -1,3 +1,13 @@
+CREATE TABLE catalogo_productos (
+    id_catalogo SERIAL PRIMARY KEY,
+    store_id INT NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    description TEXT,
+    precio DECIMAL(10, 2) NOT NULL,
+    stock INT NOT NULL,
+    duracion_minutos INT NOT NULL
+);
+
 INSERT INTO catalogo_productos (store_id, nombre, description, precio, stock, duracion_minutos) VALUES
 (1, 'Café Americano', 'Café recién preparado, suave y aromático', 35.00, 100, 5),
 (1, 'Café Latte', 'Espresso con leche vaporizada', 45.00, 100, 7),
@@ -30,10 +40,3 @@ INSERT INTO catalogo_productos (store_id, nombre, description, precio, stock, du
 (1, 'Bagel con Queso', 'Bagel tostado con queso crema', 45.00, 50, 5),
 (1, 'Wrap de Pollo', 'Tortilla con pollo y vegetales', 70.00, 35, 10);
 
--- Cliente de ejemplo
-INSERT INTO cliente (nombre, correo, telefono) VALUES
-('Cliente de Prueba', 'prueba@stardust.com', '6441234567');
-
--- Verificar productos insertados
-SELECT COUNT(*) as total_productos FROM catalogo_productos;
-SELECT * FROM catalogo_productos ORDER BY id_catalogo;
