@@ -22,7 +22,7 @@ router.post('/procesar-pago', async (req, res) => {
 
         // 1️⃣ Mandar datos al banco
         const respuestaBanco = await axios.post(
-            "URL_DEL_BANCO/transaccion",
+            "https://bancarata.vercel.app/api/bank",
             datosPago
         );
 
