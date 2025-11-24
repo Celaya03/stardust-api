@@ -84,6 +84,12 @@ app.post('/api/registrar-venta', async (req, res) => {
       );
     }
     
+    // Actualizar total del pedido
+    await pool.query(
+      'UPDATE pedido SET total = $1 WHERE id_pedido = $2',
+      [total, id_pedido]
+    );
+
     /* ============================
        DISPONIBILIDAD DE PRODUCTOS
        ============================ */
@@ -109,11 +115,6 @@ app.post('/api/registrar-venta', async (req, res) => {
         res.status(500).json({ error: 'Error interno del servidor' });
       }
     });
-    // Actualizar total del pedido
-    await pool.query(
-      'UPDATE pedido SET total = $1 WHERE id_pedido = $2',
-      [total, id_pedido]
-    );
 
     /* ============================
        INTEGRACIÓN CON GESTIÓN DE ENVÍOS
