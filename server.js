@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { Pool } = require('pg');
+const axios = require('axios');
 
 dotenv.config();
 const app = express();
@@ -46,101 +47,119 @@ app.get('/api/catalogo', async (req, res) => {
   }
 });
 
-// Verificar disponibilidad
-app.post('/api/verificar-disponibilidad', async (req, res) => {
-  const { productos } = req.body; // [{ id_producto, cantidad }]
-  try {
-    const disponibilidad = [];
-    for (const p of productos) {
-      const result = await pool.query(
-        'SELECT stock FROM catalogo_productos WHERE id_producto = $1',
-        [p.id_producto]
-      );
-      const stock = result.rows[0]?.stock || 0;
-      disponibilidad.push({
-        id_producto: p.id_producto,
-        solicitado: p.cantidad,
-        disponible: stock >= p.cantidad
-      });
-    }
-    res.json(disponibilidad);
-  } catch (error) {
-    console.error('Error al verificar disponibilidad:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Registrar venta con integración de pago
+// Registrar venta con integración de pago + envíos
 app.post('/api/registrar-venta', async (req, res) => {
   const { cliente_id, productos, respuestaBanco } = req.body;
 
   try {
-    // Guardar pago
-    const pagoResult = await pool.query(
-      `INSERT INTO pago (
-        id_transaccion, nombre_comercio, tipo_transaccion, monto, moneda,
-        marca_tarjeta, numero_tarjeta, numero_autorizacion, estado, firma,
-        mensaje, creada_utc
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id_pago`,
-      [
-        respuestaBanco.IdTransaccion,
-        respuestaBanco.NombreComercio,
-        respuestaBanco.TipoTransaccion,
-        respuestaBanco.MontoTransaccion,
-        respuestaBanco.Moneda,
-        respuestaBanco.MarcaTarjeta,
-        respuestaBanco.NumeroTarjeta,
-        respuestaBanco.NumeroAutorizacion,
-        respuestaBanco.NombreEstado,
-        respuestaBanco.Firma,
-        respuestaBanco.Mensaje,
-        respuestaBanco.CreadaUTC
-      ]
-    );
-
-    const id_pago = pagoResult.rows[0].id_pago;
-
     // Crear pedido
     const pedidoResult = await pool.query(
-      `INSERT INTO pedido (cliente_id, id_pago, fecha) 
-       VALUES ($1, $2, NOW()) RETURNING id_pedido`,
-      [cliente_id, id_pago]
+      `INSERT INTO pedido (id_cliente, fecha, total) 
+       VALUES ($1, NOW(), 0) RETURNING id_pedido`,
+      [cliente_id]
     );
-
     const id_pedido = pedidoResult.rows[0].id_pedido;
+
+    let total = 0;
 
     // Guardar detalle de productos y actualizar stock
     for (const p of productos) {
-      await pool.query(
-        `INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad) 
-         VALUES ($1, $2, $3)`,
-        [id_pedido, p.id_producto, p.cantidad]
+      const prodResult = await pool.query(
+        'SELECT precio FROM catalogo_productos WHERE id_catalogo = $1',
+        [p.id_catalogo]
       );
+      const precio = prodResult.rows[0].precio;
+      const subtotal = precio * p.cantidad;
+      total += subtotal;
+
       await pool.query(
-        `UPDATE catalogo_productos SET stock = stock - $1 WHERE id_producto = $2`,
-        [p.cantidad, p.id_producto]
+        `INSERT INTO pedido_detalle (id_pedido, id_catalogo, cantidad, subtotal) 
+         VALUES ($1, $2, $3, $4)`,
+        [id_pedido, p.id_catalogo, p.cantidad, subtotal]
+      );
+
+      await pool.query(
+        `UPDATE catalogo_productos SET stock = stock - $1 WHERE id_catalogo = $2`,
+        [p.cantidad, p.id_catalogo]
       );
     }
 
-    res.json({ mensaje: 'Venta registrada', id_pedido, id_pago });
+    // Actualizar total del pedido
+    await pool.query(
+      'UPDATE pedido SET total = $1 WHERE id_pedido = $2',
+      [total, id_pedido]
+    );
+
+    /* ============================
+       INTEGRACIÓN CON GESTIÓN DE ENVÍOS
+       ============================ */
+
+    // Obtener datos del cliente desde tu BD
+    const clienteResult = await pool.query(
+      'SELECT nombre, correo AS email, telefono FROM cliente WHERE id_cliente = $1',
+      [cliente_id]
+    );
+    const cliente = clienteResult.rows[0];
+
+    // Obtener info de productos desde catálogo
+    const productosInfo = [];
+    for (const p of productos) {
+      const prodResult = await pool.query(
+        'SELECT nombre, precio FROM catalogo_productos WHERE id_catalogo = $1',
+        [p.id_catalogo]
+      );
+      const prod = prodResult.rows[0];
+      productosInfo.push({
+        sku: `PROD-${p.id_catalogo}`,
+        nombre: prod.nombre,
+        cantidad: p.cantidad,
+        precio_unitario: prod.precio
+      });
+    }
+
+    // Construir payload para envíos
+    const envioPayload = {
+      id_orden_externa: `CAF-${id_pedido}`,
+      id_orden_original: `P-${id_pedido}`,
+      servicio_origen: "Cafetería Stardust",
+      webhook_url: "https://stardust-api-6e7j.onrender.com/api/webhook-envios", // tu URL pública en Render
+      datos_cliente: cliente,
+      productos: productosInfo
+    };
+
+    // Enviar orden al servicio de envíos
+    const responseEnvios = await axios.post("https://gestion-envios-sz3x.onrender.com/ordenes", envioPayload);
+
+    // Guardar código de seguimiento en tu BD
+    await pool.query(
+      'UPDATE pedido SET codigo_seguimiento = $1 WHERE id_pedido = $2',
+      [responseEnvios.data.codigo_seguimiento, id_pedido]
+    );
+
+    res.json({ mensaje: 'Venta registrada y orden enviada a envíos', id_pedido, total });
   } catch (error) {
-    console.error('Error al registrar venta:', error);
+    console.error('Error al registrar venta o enviar orden:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-// Catálogo filtrado por tienda
-app.post('/api/catalogo-por-tienda', async (req, res) => {
-  const { store_id } = req.body;
+/* ============================
+   WEBHOOK PARA NOTIFICACIONES DE ENVÍOS
+   ============================ */
+app.post('/api/webhook-envios', async (req, res) => {
+  const { codigo_seguimiento, estado, fecha } = req.body;
+
+  console.log("Notificación de envíos:", req.body);
+
   try {
-    const resultado = await pool.query(
-      'SELECT * FROM catalogo_productos WHERE store_id = $1',
-      [store_id]
+    await pool.query(
+      'UPDATE pedido SET estado_envio = $1 WHERE codigo_seguimiento = $2',
+      [estado, codigo_seguimiento]
     );
-    res.json({ tienda: store_id, productos: resultado.rows });
+    res.json({ recibido: true });
   } catch (error) {
-    console.error('Error al obtener catálogo por tienda:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error al procesar webhook:", error);
+    res.status(500).json({ error: "Error interno al procesar webhook" });
   }
 });
 
