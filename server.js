@@ -43,7 +43,7 @@ app.listen(PORT, () => {
 });
 
 
-const pool = require('./db');
+
 
 const pool = require('./db');
 
