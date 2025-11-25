@@ -22,4 +22,29 @@ router.get('/catalogo', async (req, res) => {
   }
 });
 
+router.get('/catalogo/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const resultado = await pool.query(
+      `
+      SELECT id_catalogo, nombre, descripcion, precio, stock
+      FROM catalogo_productos
+      WHERE id_catalogo = $1;
+      `,
+      [id]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.json(resultado.rows[0]);
+
+  } catch (error) {
+    console.error('Error al obtener el producto:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
 module.exports = router;
