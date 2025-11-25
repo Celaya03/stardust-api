@@ -2,7 +2,7 @@
 /* ============================
    CATALOGO DE PRODUCTOS
    ============================ */
-app.get('/api/catalogo', async (req, res) => {
+app.get('/catalogo', async (req, res) => {
   try {
     const resultado = await pool.query(`
       SELECT 
