@@ -27,7 +27,7 @@ router.post('/procesar-pago', async (req, res) => {
 
         // 3️⃣ Guarda la respuesta en la base de datos
         const insertSQL = `
-            INSERT INTO tranasacciones_banco (
+            INSERT INTO transacciones_banco (
                 CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
                 MarcaTarjeta, NumeroTarjeta, NumeroAutorizacion,
                 NombreEstado, Firma, Mensaje
