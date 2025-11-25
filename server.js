@@ -32,6 +32,32 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Stardust Cafetería API' });
 });
 
+ /* ============================
+       DISPONIBILIDAD DE PRODUCTOS
+       ============================ */
+app.get('/api/disp-productos', async (req, res) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT 
+        id_catalogo,
+        nombre,
+        stock,
+        CASE 
+          WHEN stock > 0 THEN true
+          ELSE false
+        END AS disponible
+      FROM catalogo_productos
+      ORDER BY id_catalogo;
+    `);
+
+    res.json(resultado.rows);
+
+  } catch (error) {
+    console.error('Error al obtener disponibilidad:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 /* ============================
    ENDPOINTS PRINCIPALES
    ============================ */
@@ -83,7 +109,7 @@ app.post('/api/registrar-venta', async (req, res) => {
         [p.cantidad, p.id_catalogo]
       );
     }
-
+    
     // Actualizar total del pedido
     await pool.query(
       'UPDATE pedido SET total = $1 WHERE id_pedido = $2',
