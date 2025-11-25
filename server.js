@@ -44,15 +44,3 @@ app.listen(PORT, () => {
 
 
 
-
-const pool = require('./db');
-
-app.get('/db-test', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({ conectado: true, hora: result.rows[0].now });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ conectado: false, error: err.message });
-  }
-});
