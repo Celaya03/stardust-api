@@ -4,6 +4,8 @@ const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
 
+const router = express.Router();
+
 // Procesar pago y registrar transacción
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
@@ -68,7 +70,17 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
-module.exports = router;
+//  GET /api/transacciones_banco
+router.get('/transacciones_banco', async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Error consultando transacciones" });
+    }
+});
+
+export default router;
 
 //// services/bancoService.js
 //export async function enviarTransaccionAlBanco(datosTransaccion) {
