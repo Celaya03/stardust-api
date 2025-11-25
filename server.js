@@ -35,6 +35,10 @@ app.use('/api/banco', bancoRoutes);
 const enviosRoutes = require('./routes/envios');
 app.use('/api/envios', enviosRoutes);
 
+//  ()
+const gestionRoutes = require('./routes/gestion');
+app.use('/api/gestion', gestionRoutes);
+
 /* ============================
    INICIO DEL SERVIDOR
    ============================ */
