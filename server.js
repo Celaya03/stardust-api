@@ -42,5 +42,9 @@ app.listen(PORT, () => {
   console.log(`🚀 Stardust API corriendo en puerto ${PORT}`);
 });
 
+const pool = require('./db');
 
+pool.connect()
+    .then(() => console.log('✅ Conectado a PostgreSQL'))
+    .catch(err => console.error('❌ Error conectando a PostgreSQL:', err));
 
