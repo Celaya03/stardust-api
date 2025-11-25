@@ -30,3 +30,4 @@ dist/
 build/
 /.vs/stardust-api
 /.vs
+/.vs/stardust-api/v17/DocumentLayout.backup.json
