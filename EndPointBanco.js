@@ -3,19 +3,6 @@ import express from 'express';
 import axios from 'axios';
 import { Pool } from 'pg';  
 
-app.get('/api/transacciones_banco', async (req, res) => {
-    try {
-        const resultado = await pool.query(`
-         SELECT * FROM transacciones_banco ORDER BY id ASC
-      `);
-
-        res.json(resultado.rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al obtener transacciones del banco' });
-    }
-});
-
 router.post('/procesar-pago', async (req, res) => {
     console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
     try {

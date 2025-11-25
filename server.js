@@ -73,6 +73,19 @@ app.get('/api/catalogo', async (req, res) => {
   }
 });
 
+app.get('/api/transacciones_banco', async (req, res) => {
+    try {
+        const resultado = await pool.query(`
+         SELECT * FROM transacciones_banco ORDER BY id ASC
+      `);
+
+        res.json(resultado.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener transacciones del banco' });
+    }
+});
+
 // Registrar venta con integración de pago + envíos
 app.post('/api/registrar-venta', async (req, res) => {
   const { cliente_id, productos, respuestaBanco } = req.body;
