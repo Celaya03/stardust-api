@@ -1,34 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db'); // conexión central a PostgreSQL
+const pool = require('../db'); // ✅ solo importas pool
 
-// Webhook de envíos
-router.post('/webhook-envios', async (req, res) => {
-  const { id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha } = req.body;
-
-  console.log("📨 Notificación de envíos:", req.body);
-
+// Insertar envío
+router.post('/', async (req, res) => {
+  const { id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion } = req.body;
   try {
-    // Actualizar estado en pedido
     await pool.query(
-      'UPDATE pedido SET estado_envio = $1 WHERE codigo_seguimiento = $2',
-      [estado_actual, codigo_seguimiento]
+      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion]
     );
+    res.status(201).json({ message: 'Estado de envío guardado' });
+  } catch (err) {
+    console.error('❌ Error en POST /api/envios:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // Guardar histórico en movimientos_envio
-    await pool.query(
-      `INSERT INTO movimientos_envio (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha) 
-       VALUES ($1, $2, $3, $4, $5)`,
-      [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha]
-    );
-
-    res.json({ recibido: true });
-  } catch (error) {
-    console.error("Error al procesar webhook:", error);
-    res.status(500).json({ error: "Error interno al procesar webhook" });
+// Consultar envíos
+router.get('/', async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM edo_env`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('❌ Error en GET /api/envios:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
 module.exports = router;
+
 
 
