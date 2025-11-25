@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -9,6 +8,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+/* ============================
+   ENDPOINTS BÁSICOS
+   ============================ */
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -35,6 +38,18 @@ app.use('/api/banco', bancoRoutes);
 const enviosRoutes = require('./routes/envios');
 app.use('/api/envios', enviosRoutes);
 
+// Catálogo de productos
+const catalogoRoutes = require('./routes/catalogo');
+app.use('/api/catalogo', catalogoRoutes);
+
+// Disponibilidad de productos
+const disponibilidadRoutes = require('./routes/disponibilidad');
+app.use('/api/disponibilidad', disponibilidadRoutes);
+
+// Venta de productos
+const ventaRoutes = require('./routes/venta');
+app.use('/api/venta', ventaRoutes);
+
 /* ============================
    INICIO DEL SERVIDOR
    ============================ */
@@ -42,17 +57,3 @@ app.listen(PORT, () => {
   console.log(`🚀 Stardust API corriendo en puerto ${PORT}`);
 });
 
-
-
-
-const pool = require('./db');
-
-app.get('/db-test', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({ conectado: true, hora: result.rows[0].now });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ conectado: false, error: err.message });
-  }
-});
