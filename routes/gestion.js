@@ -9,14 +9,7 @@ const pool = require('../db');
 router.get('/catalogo', async (req, res) => {
   try {
     const resultado = await pool.query(`
-      SELECT 
-        id_catalogo,
-        nombre,
-        descripcion,
-        precio,
-        stock,
-        imagen_url,
-        categoria
+      SELECT id_catalogo, nombre, descripcion, precio, stock
       FROM catalogo_productos
       ORDER BY id_catalogo;
     `);
@@ -25,6 +18,8 @@ router.get('/catalogo', async (req, res) => {
 
   } catch (error) {
     console.error('Error al obtener catálogo:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 });
+
+module.exports = router;
