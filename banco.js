@@ -1,69 +1,74 @@
 ﻿
-import express from 'express';
-import axios from 'axios';
-import { Pool } from 'pg';  
+const express = require('express');
+const router = express.Router();
+const axios = require('axios');
+const pool = require('../db'); // conexión central a PostgreSQL
 
+// Procesar pago y registrar transacción
 router.post('/procesar-pago', async (req, res) => {
-    console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
-    try {
-        // 1️⃣ Datos fijos para pruebas
-        const datosPago = {
-            NumeroTarjetaOrigen: "3131313131313131",
-            NumeroTarjetaDestino: "8181818181818181",
-            NombreCliente: "Ernesto Ibarra",
-            MesExp: 12,
-            AnioExp: 2028,
-            Cvv: "123",
-            Monto: 150.25
-        };
+  console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
-        // 2️⃣ Envía los datos al API del banco
-        const respuestaBanco = await axios.post(
-            'https://bancarata.vercel.app/api/bank',
-            datosPago,
-            { headers: { 'Content-Type': 'application/json' } }
-        );
+  try {
+    // Datos fijos de prueba (puedes reemplazar con req.body)
+    const datosPago = {
+      NumeroTarjetaOrigen: "3131313131313131",
+      NumeroTarjetaDestino: "8181818181818181",
+      NombreCliente: "Ernesto Ibarra",
+      MesExp: 12,
+      AnioExp: 2028,
+      Cvv: "123",
+      Monto: 150.25
+    };
 
-        const trx = respuestaBanco.data;
+    // Enviar al API del banco
+    const respuestaBanco = await axios.post(
+      'https://bancarata.vercel.app/api/bank',
+      datosPago,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
 
-        // 3️⃣ Guarda la respuesta en la base de datos
-        const insertSQL = `
-            INSERT INTO transacciones_banco (
-                CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-                MarcaTarjeta, NumeroTarjeta, NumeroAutorizacion,
-                NombreEstado, Firma, Mensaje
-            )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-            RETURNING *;
-        `;
+    const trx = respuestaBanco.data;
 
-        const values = [
-            trx.CreadaUTC,
-            trx.IdTransaccion,
-            trx.TipoTransaccion,
-            trx.MontoTransaccion,
-            trx.MarcaTarjeta,
-            trx.NumeroTarjeta,
-            trx.NumeroAutorizacion,
-            trx.NombreEstado,
-            trx.Firma,
-            trx.Mensaje
-        ];
+    // Guardar en la BD
+    const insertSQL = `
+      INSERT INTO transacciones_banco (
+        CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
+        MarcaTarjeta, NumeroTarjeta, NumeroAutorizacion,
+        NombreEstado, Firma, Mensaje
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      RETURNING *;
+    `;
 
-        const result = await pool.query(insertSQL, values);
+    const values = [
+      trx.CreadaUTC,
+      trx.IdTransaccion,
+      trx.TipoTransaccion,
+      trx.MontoTransaccion,
+      trx.MarcaTarjeta,
+      trx.NumeroTarjeta,
+      trx.NumeroAutorizacion,
+      trx.NombreEstado,
+      trx.Firma,
+      trx.Mensaje
+    ];
 
-        // 4️⃣ Devuelve la respuesta al cliente
-        return res.status(200).json({
-            mensaje: 'Pago procesado y registrado',
-            transaccion: result.rows[0],
-            banco: trx
-        });
+    const result = await pool.query(insertSQL, values);
 
-    } catch (error) {
-        console.error('Error procesando pago:', error);
-        return res.status(500).json({ error: 'Error interno procesando el pago.' });
-    }
+    // Respuesta al cliente
+    return res.status(200).json({
+      mensaje: 'Pago procesado y registrado',
+      transaccion: result.rows[0],
+      banco: trx
+    });
+
+  } catch (error) {
+    console.error('Error procesando pago:', error);
+    return res.status(500).json({ error: 'Error interno procesando el pago.' });
+  }
 });
+
+module.exports = router;
 
 //// services/bancoService.js
 //export async function enviarTransaccionAlBanco(datosTransaccion) {
