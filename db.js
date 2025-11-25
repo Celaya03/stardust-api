@@ -14,20 +14,23 @@ const { Pool } = require('pg');
 
 // db test en caso de error capaz y es culpa de esto
 
+const { Pool } = require('pg');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
 const pool = new Pool({
-
-  user: 'stardust_db_d9gz_user',
-  host: 'dpg-d4eggenpm1nc738r2nk0-a.oregon-postgres.render.com',
-  database: 'stardust_db_d9gz',
-  password: '8JDv0jWJdK4L0UpmmiO0TAdKnxhPrZmV',
-  port: 5432,
-
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false, // necesario para Render
-    }
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  ssl: {
+    rejectUnauthorized: false // Render necesita SSL
+  }
 });
 
 module.exports = pool;
+
 
 
