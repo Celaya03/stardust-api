@@ -45,17 +45,14 @@ app.listen(PORT, () => {
 
 const pool = require('./db');
 
-app.post('/db-test', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `INSERT INTO movimientos_envio (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      ['TEST-001', 'ENV-TEST', 'Prueba', 'Hermosillo', new Date()]
-    );
+const pool = require('./db');
 
-    res.json({ ok: true, insertado: result.rows[0] });
+app.get('/db-test', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ conectado: true, hora: result.rows[0].now });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ conectado: false, error: err.message });
   }
 });
