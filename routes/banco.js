@@ -68,6 +68,16 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
+//  GET /api/transacciones_banco
+router.get('/transacciones_banco', async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Error consultando transacciones" });
+    }
+});
+
 module.exports = router;
 
 //// services/bancoService.js
