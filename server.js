@@ -26,6 +26,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Stardust Cafetería API' });
 });
 
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'Stardust Cafetería API' });
+});
+
 /* ============================
    IMPORTACIÓN DE RUTAS
    ============================ */
