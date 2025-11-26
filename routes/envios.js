@@ -4,7 +4,7 @@ const pool = require('../db'); // conexión central a PostgreSQL
 
 // Webhook de envíos
 router.post('/webhook-envios', async (req, res) => {
-  const { id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha } = req.body;
+  const { id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion } = req.body;
 
   console.log("📨 Notificación de envíos:", JSON.stringify(req.body, null, 2));
 
@@ -18,7 +18,7 @@ router.post('/webhook-envios', async (req, res) => {
                      estado_actual = EXCLUDED.estado_actual,
                      ubicacion_actual = EXCLUDED.ubicacion_actual,
                      fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
-      [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha]
+      [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion]
     );
 
     res.json({ recibido: true });
