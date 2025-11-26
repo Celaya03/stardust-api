@@ -8,8 +8,11 @@ const pool = require('../db'); // conexión central a PostgreSQL
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
-  try {
-    // Datos fijos de prueba (puedes reemplazar con req.body)
+    try {
+    // Usa los datos enviados desde Postman
+    //const datosPago = req.body;
+
+    // Datos fijos de prueba
     const datosPago = {
       NumeroTarjetaOrigen: "3131313131313131",
       NumeroTarjetaDestino: "8181818181818181",
