@@ -17,7 +17,7 @@ router.post('/webhook-envios', async (req, res) => {
 
     // Guardar histórico en movimientos_envio
     await pool.query(
-      `INSERT INTO movimientos_envio (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha) 
+      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha) 
        VALUES ($1, $2, $3, $4, $5)`,
       [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha]
     );
