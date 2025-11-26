@@ -57,6 +57,7 @@ const ventaRoutes = require('./routes/venta');
 app.use('/api/venta', ventaRoutes);
 
 // Test DB connection
+const pool = require('./db'); // Ajusta la ruta si estás en otro archivo
 app.get('/db-check', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
