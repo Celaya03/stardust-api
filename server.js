@@ -56,6 +56,17 @@ app.use('/api/disponibilidad', disponibilidadRoutes);
 const ventaRoutes = require('./routes/venta');
 app.use('/api/venta', ventaRoutes);
 
+// Test DB connection
+app.get('/db-check', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ conectado: true, hora_servidor: result.rows[0].now });
+  } catch (error) {
+    console.error('❌ Error de conexión a la base:', error.message);
+    res.status(500).json({ conectado: false, error: error.message });
+  }
+});
+
 /* ============================
    INICIO DEL SERVIDOR
    ============================ */
