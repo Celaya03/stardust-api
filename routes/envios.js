@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Este endpoint lo llama el servicio externo
+// Webhook que recibe el body del servicio externo
 router.post('/webhook-envios', async (req, res) => {
+  console.log('📦 Body recibido en webhook-envios:', req.body);
+
   const {
     id_orden_externa,
     codigo_seguimiento,
@@ -19,7 +21,16 @@ router.post('/webhook-envios', async (req, res) => {
       [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion]
     );
 
-    res.status(201).json({ message: 'Estado de envío guardado en edo_env' });
+    res.status(201).json({
+      message: 'Estado de envío guardado en edo_env',
+      datos_guardados: {
+        id_orden_externa,
+        codigo_seguimiento,
+        estado_actual,
+        ubicacion_actual,
+        fecha_actualizacion
+      }
+    });
   } catch (err) {
     console.error('❌ Error al guardar en edo_env:', err.message);
     res.status(500).json({ error: err.message });
@@ -27,3 +38,4 @@ router.post('/webhook-envios', async (req, res) => {
 });
 
 module.exports = router;
+
