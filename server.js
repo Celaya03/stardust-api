@@ -26,6 +26,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Stardust Cafetería API' });
 });
 
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'Stardust Cafetería API' });
+});
+
 /* ============================
    IMPORTACIÓN DE RUTAS
    ============================ */
@@ -49,6 +55,18 @@ app.use('/api/disponibilidad', disponibilidadRoutes);
 // Venta de productos
 const ventaRoutes = require('./routes/venta');
 app.use('/api/venta', ventaRoutes);
+
+// Test DB connection
+const pool = require('./db'); // Ajusta la ruta si estás en otro archivo
+app.get('/db-check', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ conectado: true, hora_servidor: result.rows[0].now });
+  } catch (error) {
+    console.error('❌ Error de conexión a la base:', error.message);
+    res.status(500).json({ conectado: false, error: error.message });
+  }
+});
 
 /* ============================
    INICIO DEL SERVIDOR
