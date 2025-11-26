@@ -40,6 +40,10 @@ app.get('/health', (req, res) => {
 const bancoRoutes = require('./routes/banco');
 app.use('/api/banco', bancoRoutes);
 
+
+const enviosRoutes = require('./routes/envios');
+app.use('/api/envios', enviosRoutes);
+
 // Envíos (webhook y movimientos)
 const enviosRoutes = require('./routes/envios');
 app.use('/api/envios', enviosRoutes);
