@@ -1,11 +1,11 @@
 // routes/disponibilidad.js
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const pool = require('../db'); // conexión a PostgreSQL
 
-// Verificar disponibilidad con POST (solo devuelve stock)
-router.post('/verificar', async (req, res) => {
-  const { store_id, id_producto, cantidad_solicitada } = req.body;
+// Verificar disponibilidad con GET (solo devuelve stock)
+router.get('/verificar', async (req, res) => {
+  const { store_id, id_producto, cantidad_solicitada } = req.query;
 
   if (!store_id || !id_producto || !cantidad_solicitada) {
     return res.status(400).json({ error: "Faltan parámetros en la petición" });
@@ -35,4 +35,5 @@ router.post('/verificar', async (req, res) => {
 });
 
 module.exports = router;
+
 
