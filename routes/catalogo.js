@@ -1,29 +1,35 @@
+// routes/catalogo.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-router.post('/', async (req, res) => {
-  const { store_id, nombre, descripcion, precio, talla, color, stock, duracion_minutos } = req.body;
+// Devuelve el catálogo completo de la cafetería (store_id = 3)
+router.get('/', async (req, res) => {
+  const store_id = 3; // fijo para tu tienda
+
   try {
     const result = await pool.query(
-      `INSERT INTO catalogo (store_id, nombre, descripcion, precio, talla, color, stock, duracion_minutos)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-      [store_id, nombre, descripcion, precio, talla, color, stock, duracion_minutos]
+      `SELECT id_producto, descripcion, precio, stock
+       FROM catalogo
+       WHERE store_id = $1`,
+      [store_id]
     );
-    res.status(201).json({ id: result.rows[0].id });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query(`SELECT * FROM catalogo`);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // Agregar campos nulos para compatibilidad
+    const catalogo = result.rows.map(producto => ({
+      ...producto,
+      talla: null,
+      color: null,
+      duracion_minutos: null
+    }));
+
+    res.json(catalogo);
+  } catch (error) {
+    console.error("❌ Error al consultar catálogo:", error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
 module.exports = router;
+
 
