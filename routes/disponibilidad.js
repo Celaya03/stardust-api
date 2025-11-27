@@ -25,7 +25,6 @@ router.get('/verificar', async (req, res) => {
     res.json({
       store_id,
       id_producto,
-      cantidad_solicitada,
       stock: result.rows[0].stock
     });
   } catch (error) {
