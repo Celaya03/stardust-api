@@ -4,7 +4,7 @@ const router = express.Router();
 const pool = require('../db'); // conexión central a PostgreSQL
 
 // Verificar disponibilidad de producto en tu tienda (store_id = 3)
-router.post('/verificar', async (req, res) => {
+router.get('/verificar', async (req, res) => {
   const { id_producto, cantidad_solicitada } = req.body;
   const store_id = 3; // tu tienda fija
 
