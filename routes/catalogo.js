@@ -3,11 +3,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // conexión a PostgreSQL
 
-// Obtener catálogo por store_id y categoría
 router.post('/obtener', async (req, res) => {
-  const { store_id, category } = req.body;
+  const { store_id, category, api_url } = req.body;
 
-  if (!store_id || !category) {
+  if (!store_id || !category || !api_url) {
     return res.status(400).json({ error: "Faltan parámetros en la petición" });
   }
 
@@ -18,12 +17,14 @@ router.post('/obtener', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "No hay productos en esta categoría para la tienda" });
+      return res.status(404).json({ error: "No hay productos en esa categoría para esta tienda" });
     }
 
+    // 👉 Respuesta con catálogo
     res.json({
       store_id,
       category,
+      api_url, // lo devuelves si ellos lo quieren ver reflejado
       productos: result.rows
     });
   } catch (error) {
@@ -33,4 +34,5 @@ router.post('/obtener', async (req, res) => {
 });
 
 module.exports = router;
+
 
