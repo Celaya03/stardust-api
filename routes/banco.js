@@ -8,7 +8,7 @@ router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
   try {
-    // 👉 Recibir datos desde Postman o frontend
+    // Recibir datos desde Postman o frontend
     const datosPago = req.body;
 
     // Validación mínima
@@ -17,17 +17,17 @@ router.post('/procesar-pago', async (req, res) => {
       return res.status(400).json({ error: "Faltan parámetros en la petición" });
     }
 
-    // 👉 Mandar al banco
+    // Mandar al banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
       { headers: { 'Content-Type': 'application/json' } }
     );
 
-    // 👉 Respuesta del banco
     const trx = respuestaBanco.data;
+    console.log("📥 Respuesta del banco:", trx);
 
-    // 👉 Guardar en la BD (solo lo que definiste en tu contrato)
+    // Guardar en la base de datos
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC,
@@ -54,16 +54,18 @@ router.post('/procesar-pago', async (req, res) => {
       trx.Descripcion
     ];
 
+    console.log("📦 Valores a insertar:", values);
+
     const result = await pool.query(insertSQL, values);
 
-    // 👉 Responder al cliente
+    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
-      transaccion: result.rows[0], // lo que quedó en la BD
-      banco: trx // lo que devolvió el banco
+      transaccion: result.rows[0],
+      banco: trx
     });
   } catch (error) {
-    console.error('❌ Error procesando pago:', error.message);
+    console.error('❌ Error procesando pago:', error.response?.data || error.message);
     return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
 });
@@ -80,6 +82,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
