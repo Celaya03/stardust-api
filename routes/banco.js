@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
 
+// Procesar pago y registrar transacción
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
@@ -24,6 +25,24 @@ router.post('/procesar-pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log("📥 Respuesta del banco:", trx);
 
+    const values = [
+      trx.CreadaUTC,
+      trx.IdTransaccion,
+      trx.TipoTransaccion,
+      trx.MontoTransaccion,
+      trx.NumeroTarjeta,
+      trx.NombreEstado,
+      trx.Firma,
+      trx.Descripcion
+    ];
+
+    // Verificar valores antes de insertar
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] === undefined || values[i] === null) {
+        console.warn(`⚠️ Valor faltante en posición ${i}:`, values[i]);
+      }
+    }
+
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC,
@@ -39,17 +58,6 @@ router.post('/procesar-pago', async (req, res) => {
       RETURNING *;
     `;
 
-    const values = [
-      trx.CreadaUTC,
-      trx.IdTransaccion,
-      trx.TipoTransaccion,
-      trx.MontoTransaccion,
-      trx.NumeroTarjeta,
-      trx.NombreEstado,
-      trx.Firma,
-      trx.Descripcion
-    ];
-
     console.log("📦 Intentando insertar en BD:", values);
 
     let result;
@@ -57,7 +65,7 @@ router.post('/procesar-pago', async (req, res) => {
       result = await pool.query(insertSQL, values);
       console.log("✅ Transacción guardada en BD:", result.rows[0]);
     } catch (dbError) {
-      console.error("❌ Error al guardar en BD:", dbError.message);
+      console.error("❌ ERROR REAL DE BD:", dbError.stack);
       return res.status(500).json({
         error: "Error guardando en la base de datos",
         detalle: dbError.message
@@ -75,6 +83,7 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
+// Consultar transacciones registradas
 router.get('/transacciones_banco', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
@@ -86,6 +95,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
