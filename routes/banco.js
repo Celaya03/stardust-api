@@ -1,16 +1,14 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db'); // conexión central a PostgreSQL
+const pool = require('../db');
 
-// 🔹 Procesar pago y registrar transacción
 router.post('/pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /pago:', new Date().toISOString());
 
   try {
     const datosPago = req.body;
 
-    // Enviar al API del banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
@@ -20,29 +18,9 @@ router.post('/pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log('📦 Respuesta del banco:', trx);
 
-    // 🔒 Enmascarar tarjeta (últimos 4 dígitos)
     const tarjeta = trx.NumeroTarjeta.toString();
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
-
-    // Validar campos obligatorios
-    if (
-      !trx.CreadaUTC || !trx.IdTransaccion || !trx.TipoTransaccion ||
-      !trx.MontoTransaccion || !trx.Firma || !trx.Descripcion || !trx.NombreEstado
-    ) {
-      console.error('⚠️ Faltan campos en la respuesta del banco');
-      return res.status(400).json({ error: 'Respuesta incompleta del banco' });
-    }
-
-    // 🔄 Insertar en la BD con columnas en orden correcto
-    const insertSQL = `
-      INSERT INTO transacciones_banco (
-        creadautc, montotransaccion, tipotransaccion, descripcion,
-        numerotarjeta, nombreestado, firma, idtransaccion
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      RETURNING *;
-    `;
 
     const values = [
       trx.CreadaUTC,
@@ -56,6 +34,16 @@ router.post('/pago', async (req, res) => {
     ];
 
     console.log('🗄️ Insertando en BD con:', values);
+
+    const insertSQL = `
+      INSERT INTO transacciones_banco (
+        creadautc, montotransaccion, tipotransaccion, descripcion,
+        numerotarjeta, nombreestado, firma, idtransaccion
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING *;
+    `;
+
     const result = await pool.query(insertSQL, values);
     console.log('✅ Transacción guardada:', result.rows[0]);
 
@@ -72,7 +60,6 @@ router.post('/pago', async (req, res) => {
   }
 });
 
-// 🔹 Consultar todas las transacciones
 router.get('/transacciones_banco', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -87,6 +74,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
