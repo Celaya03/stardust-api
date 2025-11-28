@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db'); // conexión central a PostgreSQL
+const pool = require('../db'); // usa DATABASE_URL de Render
 
 // 🔹 Procesar pago y registrar transacción
 router.post('/pago', async (req, res) => {
@@ -82,6 +82,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
