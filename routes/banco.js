@@ -8,7 +8,6 @@ router.post('/pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /pago:', new Date().toISOString());
 
   try {
-    // Datos enviados desde el cliente (Postman o frontend)
     const datosPago = req.body;
 
     // Enviar al API del banco
@@ -25,11 +24,19 @@ router.post('/pago', async (req, res) => {
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
 
+    // 🔍 Obtener el id del estado desde la tabla estado_transaccion
+    const estadoResult = await pool.query(
+      'SELECT id_estado_transaccion FROM estado_transaccion WHERE nombre = $1',
+      [trx.NombreEstado]
+    );
+
+    const idEstado = estadoResult.rows[0]?.id_estado_transaccion || null;
+
     // Guardar en la BD
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-        NumeroTarjeta, NombreEstado, Firma, Descripcion
+        NumeroTarjeta, id_estado_transaccion, Firma, Descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
@@ -40,15 +47,14 @@ router.post('/pago', async (req, res) => {
       trx.IdTransaccion,
       trx.TipoTransaccion,
       trx.MontoTransaccion,
-      tarjetaMasked,        // solo últimos 4 dígitos
-      trx.NombreEstado,
+      tarjetaMasked,
+      idEstado,
       trx.Firma,
       trx.Descripcion
     ];
 
     const result = await pool.query(insertSQL, values);
 
-    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
@@ -64,7 +70,12 @@ router.post('/pago', async (req, res) => {
 // 🔹 Consultar todas las transacciones
 router.get('/transacciones_banco', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
+    const result = await pool.query(`
+      SELECT tb.*, et.nombre AS estado
+      FROM transacciones_banco tb
+      JOIN estado_transaccion et ON tb.id_estado_transaccion = et.id_estado_transaccion
+      ORDER BY tb.id ASC
+    `);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: "Error consultando transacciones" });
@@ -72,6 +83,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 //// services/bancoService.js
