@@ -4,15 +4,15 @@ const router = express.Router();
 const pool = require('../db'); // conexión a PostgreSQL
 
 router.post('/', async (req, res) => {
-  const { store_id, api_url } = req.body;
+  const { api_url } = req.body;
 
-  if (!store_id || !api_url) {
+  if (!api_url) {
     return res.status(400).json({ error: "Faltan parámetros en la petición" });
   }
 
   try {
     const result = await pool.query(
-      'SELECT id_producto, nombre, precio, stock FROM productos WHERE store_id = $1',
+      'SELECT id_producto, nombre, precio, stock FROM productos',
       [store_id]
     );
 
@@ -20,7 +20,6 @@ router.post('/', async (req, res) => {
 
     // 👉 Respuesta con catálogo
     res.json({
-      store_id,
       productos: result.rows
     });
   } catch (error) {
