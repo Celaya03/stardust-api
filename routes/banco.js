@@ -8,25 +8,26 @@ router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
   try {
-    // 👉 Recibir datos desde Postman
+    // 👉 Recibir datos desde Postman o frontend
     const datosPago = req.body;
 
-    // Validación básica
+    // Validación mínima
     const { NumeroTarjetaOrigen, NumeroTarjetaDestino, NombreCliente, MesExp, AnioExp, Cvv, Monto } = datosPago;
     if (!NumeroTarjetaOrigen || !NumeroTarjetaDestino || !NombreCliente || !MesExp || !AnioExp || !Cvv || !Monto) {
       return res.status(400).json({ error: "Faltan parámetros en la petición" });
     }
 
-    // Enviar al API del banco
+    // 👉 Mandar al banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
       { headers: { 'Content-Type': 'application/json' } }
     );
 
+    // 👉 Respuesta del banco
     const trx = respuestaBanco.data;
 
-    // Guardar en la BD con el esquema ajustado (sin NumeroAutorizacion, sin MarcaTarjeta, con Descripcion)
+    // 👉 Guardar en la BD (solo lo que definiste en tu contrato)
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC,
@@ -55,11 +56,11 @@ router.post('/procesar-pago', async (req, res) => {
 
     const result = await pool.query(insertSQL, values);
 
-    // Respuesta al cliente
+    // 👉 Responder al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
-      transaccion: result.rows[0],
-      banco: trx
+      transaccion: result.rows[0], // lo que quedó en la BD
+      banco: trx // lo que devolvió el banco
     });
   } catch (error) {
     console.error('❌ Error procesando pago:', error.message);
