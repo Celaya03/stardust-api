@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // conexión a PostgreSQL
 
-router.post('/obtener', async (req, res) => {
+router.post('/', async (req, res) => {
   const { store_id, category, api_url } = req.body;
 
   if (!store_id || !category || !api_url) {
