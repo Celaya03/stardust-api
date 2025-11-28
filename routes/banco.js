@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db');
+const pool = require('../db'); // conexión central a PostgreSQL
 
 // 🔹 Procesar pago y registrar transacción
 router.post('/pago', async (req, res) => {
@@ -20,12 +20,12 @@ router.post('/pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log('📦 Respuesta del banco:', trx);
 
-    // 🔒 Enmascarar tarjeta
+    // 🔒 Enmascarar tarjeta (últimos 4 dígitos)
     const tarjeta = trx.NumeroTarjeta.toString();
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
 
-    // Validar campos
+    // Validar campos obligatorios
     if (
       !trx.CreadaUTC || !trx.IdTransaccion || !trx.TipoTransaccion ||
       !trx.MontoTransaccion || !trx.Firma || !trx.Descripcion || !trx.NombreEstado
@@ -34,7 +34,7 @@ router.post('/pago', async (req, res) => {
       return res.status(400).json({ error: 'Respuesta incompleta del banco' });
     }
 
-    // 🔄 Insertar en el orden correcto
+    // 🔄 Insertar en la BD con columnas en orden correcto
     const insertSQL = `
       INSERT INTO transacciones_banco (
         creadautc, montotransaccion, tipotransaccion, descripcion,
@@ -87,6 +87,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
