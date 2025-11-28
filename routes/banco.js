@@ -18,13 +18,18 @@ router.post('/pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log('📦 Respuesta del banco:', trx);
 
+    // 🔒 Enmascarar tarjeta
     const tarjeta = trx.NumeroTarjeta.toString();
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
 
+    // 🔄 Conversión de tipos
+    const creadaUTC = new Date(trx.CreadaUTC); // TIMESTAMP válido
+    const monto = Number(trx.MontoTransaccion); // NUMERIC válido
+
     const values = [
-      trx.CreadaUTC,
-      trx.MontoTransaccion,
+      creadaUTC,
+      monto,
       trx.TipoTransaccion,
       trx.Descripcion,
       tarjetaMasked,
@@ -60,20 +65,8 @@ router.post('/pago', async (req, res) => {
   }
 });
 
-router.get('/transacciones_banco', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT * FROM transacciones_banco
-      ORDER BY id ASC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('❌ Error consultando transacciones:', err.message);
-    res.status(500).json({ error: "Error consultando transacciones" });
-  }
-});
-
 module.exports = router;
+
 
 
 
