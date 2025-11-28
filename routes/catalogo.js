@@ -6,7 +6,7 @@ const pool = require('../db'); // conexión a PostgreSQL
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id_producto, nombre, precio, stock, categoria FROM productos WHERE store_id = $1',
+      'SELECT id_producto, nombre, precio, stock FROM productos WHERE store_id = $1',
       [3] // 👈 store_id fijo para tu tienda
     );
 
