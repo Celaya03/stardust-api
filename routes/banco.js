@@ -1,27 +1,15 @@
-﻿
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
 
-// Procesar pago y registrar transacción
-router.post('/procesar-pago', async (req, res) => {
-  console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
+// 🔹 Procesar pago y registrar transacción
+router.post('/pago', async (req, res) => {
+  console.log('📨 Solicitud recibida en /pago:', new Date().toISOString());
 
-    try {
-    // Usa los datos enviados desde Postman
-    //const datosPago = req.body;
-
-    // Datos fijos de prueba
-    const datosPago = {
-      NumeroTarjetaOrigen: "3131313131313131",
-      NumeroTarjetaDestino: "8181818181818181",
-      NombreCliente: "Ernesto Ibarra",
-      MesExp: 12,
-      AnioExp: 2028,
-      Cvv: "123",
-      Monto: 150.25
-    };
+  try {
+    // Datos enviados desde el cliente (Postman o frontend)
+    const datosPago = req.body;
 
     // Enviar al API del banco
     const respuestaBanco = await axios.post(
@@ -32,14 +20,18 @@ router.post('/procesar-pago', async (req, res) => {
 
     const trx = respuestaBanco.data;
 
+    // 🔒 Enmascarar tarjeta (últimos 4 dígitos)
+    const tarjeta = trx.NumeroTarjeta.toString();
+    const ultimos4 = tarjeta.slice(-4);
+    const tarjetaMasked = `****${ultimos4}`;
+
     // Guardar en la BD
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-        MarcaTarjeta, NumeroTarjeta, NumeroAutorizacion,
-        NombreEstado, Firma, Mensaje
+        NumeroTarjeta, NombreEstado, Firma, Descripcion
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
     `;
 
@@ -48,12 +40,10 @@ router.post('/procesar-pago', async (req, res) => {
       trx.IdTransaccion,
       trx.TipoTransaccion,
       trx.MontoTransaccion,
-      trx.MarcaTarjeta,
-      trx.NumeroTarjeta,
-      trx.NumeroAutorizacion,
+      tarjetaMasked,        // solo últimos 4 dígitos
       trx.NombreEstado,
       trx.Firma,
-      trx.Mensaje
+      trx.Descripcion
     ];
 
     const result = await pool.query(insertSQL, values);
@@ -71,17 +61,18 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
-//  GET /api/transacciones_banco
+// 🔹 Consultar todas las transacciones
 router.get('/transacciones_banco', async (req, res) => {
-    try {
-        const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: "Error consultando transacciones" });
-    }
+  try {
+    const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Error consultando transacciones" });
+  }
 });
 
 module.exports = router;
+
 
 //// services/bancoService.js
 //export async function enviarTransaccionAlBanco(datosTransaccion) {
