@@ -1,14 +1,21 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db'); // usa DATABASE_URL de Render
+const pool = require('../db'); // conexión central a PostgreSQL
 
-// 🔹 Procesar pago y registrar transacción
-router.post('/pago', async (req, res) => {
-  console.log('📨 Solicitud recibida en /pago:', new Date().toISOString());
+// Procesar pago y registrar transacción
+router.post('/procesar-pago', async (req, res) => {
+  console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
   try {
+    // 👉 Recibir datos desde Postman
     const datosPago = req.body;
+
+    // Validación básica
+    const { NumeroTarjetaOrigen, NumeroTarjetaDestino, NombreCliente, MesExp, AnioExp, Cvv, Monto } = datosPago;
+    if (!NumeroTarjetaOrigen || !NumeroTarjetaDestino || !NombreCliente || !MesExp || !AnioExp || !Cvv || !Monto) {
+      return res.status(400).json({ error: "Faltan parámetros en la petición" });
+    }
 
     // Enviar al API del banco
     const respuestaBanco = await axios.post(
@@ -18,70 +25,61 @@ router.post('/pago', async (req, res) => {
     );
 
     const trx = respuestaBanco.data;
-    console.log('📦 Respuesta del banco:', trx);
 
-    // 🔒 Enmascarar tarjeta
-    const tarjeta = trx.NumeroTarjeta?.toString() || '';
-    const ultimos4 = tarjeta.slice(-4);
-    const tarjetaMasked = tarjeta ? `****${ultimos4}` : null;
-
-    // 🔄 Conversión de tipos
-    const creadaUTC = trx.CreadaUTC ? new Date(trx.CreadaUTC) : new Date();
-    const monto = Number(trx.MontoTransaccion) || 0;
-
-    const values = [
-      creadaUTC,
-      monto,
-      trx.TipoTransaccion || 'DESCONOCIDO',
-      trx.Descripcion || '',
-      tarjetaMasked,
-      trx.NombreEstado || 'PENDIENTE',
-      trx.Firma || '',
-      trx.IdTransaccion || 'SIN-ID'
-    ];
-
-    console.log('🗄️ Valores a insertar:', values);
-
+    // Guardar en la BD con el esquema ajustado
     const insertSQL = `
       INSERT INTO transacciones_banco (
-        creadautc, montotransaccion, tipotransaccion, descripcion,
-        numerotarjeta, nombreestado, firma, idtransaccion
+        CreadaUTC,
+        IdTransaccion,
+        TipoTransaccion,
+        MontoTransaccion,
+        NumeroTarjeta,
+        NombreEstado,
+        Firma,
+        Descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
     `;
 
-    const result = await pool.query(insertSQL, values);
-    console.log('✅ Transacción guardada:', result.rows[0]);
+    const values = [
+      trx.CreadaUTC,
+      trx.IdTransaccion,
+      trx.TipoTransaccion,
+      trx.MontoTransaccion,
+      trx.NumeroTarjeta,
+      trx.NombreEstado,
+      trx.Firma,
+      trx.Descripcion
+    ];
 
+    const result = await pool.query(insertSQL, values);
+
+    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
       banco: trx
     });
-
   } catch (error) {
     console.error('❌ Error procesando pago:', error.message);
-    if (error.stack) console.error(error.stack);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
 });
 
-// 🔹 Consultar todas las transacciones
+// Consultar transacciones registradas
 router.get('/transacciones_banco', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT * FROM transacciones_banco
-      ORDER BY id ASC
-    `);
+    const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
     res.json(result.rows);
   } catch (err) {
-    console.error('❌ Error consultando transacciones:', err.message);
+    console.error("❌ Error consultando transacciones:", err.message);
     res.status(500).json({ error: "Error consultando transacciones" });
   }
 });
 
 module.exports = router;
+
 
 
 
