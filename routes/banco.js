@@ -25,20 +25,11 @@ router.post('/pago', async (req, res) => {
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
 
-    // 🔍 Obtener el id del estado desde la tabla estado_transaccion
-    const estadoResult = await pool.query(
-      'SELECT id_estado_transaccion FROM estado_transaccion WHERE LOWER(nombre) = LOWER($1)',
-      [trx.NombreEstado]
-    );
-
-    const idEstado = estadoResult.rows[0]?.id_estado_transaccion || null;
-    console.log('🧾 ID del estado obtenido:', idEstado);
-
-    // Guardar en la BD
+    // Guardar en la BD directamente con NombreEstado
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-        NumeroTarjeta, id_estado_transaccion, Firma, Descripcion
+        NumeroTarjeta, NombreEstado, Firma, Descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
@@ -50,7 +41,7 @@ router.post('/pago', async (req, res) => {
       trx.TipoTransaccion,
       trx.MontoTransaccion,
       tarjetaMasked,
-      idEstado,
+      trx.NombreEstado,   // guardamos directamente el texto
       trx.Firma,
       trx.Descripcion
     ];
@@ -76,10 +67,8 @@ router.post('/pago', async (req, res) => {
 router.get('/transacciones_banco', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT tb.*, et.nombre AS estado
-      FROM transacciones_banco tb
-      JOIN estado_transaccion et ON tb.id_estado_transaccion = et.id_estado_transaccion
-      ORDER BY tb.id ASC
+      SELECT * FROM transacciones_banco
+      ORDER BY id ASC
     `);
     res.json(result.rows);
   } catch (err) {
