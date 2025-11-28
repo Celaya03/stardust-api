@@ -3,21 +3,18 @@ const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
 
-// Procesar pago y registrar transacción
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
   try {
-    // Recibir datos desde Postman o frontend
     const datosPago = req.body;
 
-    // Validación mínima
     const { NumeroTarjetaOrigen, NumeroTarjetaDestino, NombreCliente, MesExp, AnioExp, Cvv, Monto } = datosPago;
     if (!NumeroTarjetaOrigen || !NumeroTarjetaDestino || !NombreCliente || !MesExp || !AnioExp || !Cvv || !Monto) {
+      console.warn("⚠️ Body incompleto:", datosPago);
       return res.status(400).json({ error: "Faltan parámetros en la petición" });
     }
 
-    // Mandar al banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
@@ -27,7 +24,6 @@ router.post('/procesar-pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log("📥 Respuesta del banco:", trx);
 
-    // Guardar en la base de datos
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC,
@@ -54,18 +50,20 @@ router.post('/procesar-pago', async (req, res) => {
       trx.Descripcion
     ];
 
-    console.log("📦 Valores a insertar:", values);
+    console.log("📦 Intentando insertar en BD:", values);
 
     let result;
     try {
       result = await pool.query(insertSQL, values);
-      console.log("✅ Transacción guardada:", result.rows[0]);
+      console.log("✅ Transacción guardada en BD:", result.rows[0]);
     } catch (dbError) {
       console.error("❌ Error al guardar en BD:", dbError.message);
-      return res.status(500).json({ error: "Error guardando en la base de datos", detalle: dbError.message });
+      return res.status(500).json({
+        error: "Error guardando en la base de datos",
+        detalle: dbError.message
+      });
     }
 
-    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
@@ -77,7 +75,6 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
-// Consultar transacciones registradas
 router.get('/transacciones_banco', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
