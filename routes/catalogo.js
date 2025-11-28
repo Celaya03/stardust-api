@@ -12,13 +12,11 @@ router.post('/', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT id_producto, nombre, precio, stock FROM productos WHERE store_id = $1 AND categoria = $2',
+      'SELECT id_producto, nombre, precio, stock FROM productos WHERE store_id = $1',
       [store_id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "No hay productos en esa categoría para esta tienda" });
-    }
+    
 
     // 👉 Respuesta con catálogo
     res.json({
