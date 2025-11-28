@@ -26,7 +26,7 @@ router.post('/procesar-pago', async (req, res) => {
 
     const trx = respuestaBanco.data;
 
-    // Guardar en la BD con el esquema ajustado
+    // Guardar en la BD con el esquema ajustado (sin NumeroAutorizacion, sin MarcaTarjeta, con Descripcion)
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC,
