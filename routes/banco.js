@@ -25,6 +25,15 @@ router.post('/pago', async (req, res) => {
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
 
+    // Validar que todos los campos estén presentes
+    if (
+      !trx.CreadaUTC || !trx.IdTransaccion || !trx.TipoTransaccion ||
+      !trx.MontoTransaccion || !trx.Firma || !trx.Descripcion || !trx.NombreEstado
+    ) {
+      console.error('⚠️ Faltan campos en la respuesta del banco');
+      return res.status(400).json({ error: 'Respuesta incompleta del banco' });
+    }
+
     // Guardar en la BD directamente con NombreEstado
     const insertSQL = `
       INSERT INTO transacciones_banco (
@@ -41,7 +50,7 @@ router.post('/pago', async (req, res) => {
       trx.TipoTransaccion,
       trx.MontoTransaccion,
       tarjetaMasked,
-      trx.NombreEstado,   // guardamos directamente el texto
+      trx.NombreEstado,
       trx.Firma,
       trx.Descripcion
     ];
