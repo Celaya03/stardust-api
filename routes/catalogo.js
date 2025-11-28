@@ -1,35 +1,36 @@
 // routes/catalogo.js
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const pool = require('../db'); // conexión a PostgreSQL
 
-// Devuelve el catálogo completo de la cafetería (store_id = 3)
-router.get('/', async (req, res) => {
-  const store_id = 3; // fijo para tu tienda
+// Obtener catálogo por store_id y categoría
+router.post('/obtener', async (req, res) => {
+  const { store_id, category } = req.body;
+
+  if (!store_id || !category) {
+    return res.status(400).json({ error: "Faltan parámetros en la petición" });
+  }
 
   try {
     const result = await pool.query(
-      `SELECT id_producto, descripcion, precio, stock
-       FROM catalogo
-       WHERE store_id = $1`,
-      [store_id]
+      'SELECT id_producto, nombre, precio, stock, categoria FROM productos WHERE store_id = $1 AND categoria = $2',
+      [store_id, category]
     );
 
-    // Agregar campos nulos para compatibilidad
-    const catalogo = result.rows.map(producto => ({
-      ...producto,
-      talla: null,
-      color: null,
-      duracion_minutos: null
-    }));
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No hay productos en esta categoría para la tienda" });
+    }
 
-    res.json(catalogo);
+    res.json({
+      store_id,
+      category,
+      productos: result.rows
+    });
   } catch (error) {
-    console.error("❌ Error al consultar catálogo:", error.message);
+    console.error("❌ Error al obtener catálogo:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
 module.exports = router;
-
 

@@ -1,32 +1,34 @@
 // routes/disponibilidad.js
-// routes/disponibilidad.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // conexión a PostgreSQL
 
 // Verificar disponibilidad con POST (recibe parámetros en body)
 router.post('/verificar', async (req, res) => {
-  const { store_id, id_producto, cantidad_solicitada } = req.body;
+  const { id_producto, cantidad_solicitada } = req.body;
 
-  if (!store_id || !id_producto || !cantidad_solicitada) {
+  if (!id_producto || !cantidad_solicitada) {
     return res.status(400).json({ error: "Faltan parámetros en la petición" });
   }
 
   try {
+    // 👇 Ahora consultamos directamente la tabla productos
     const result = await pool.query(
-      'SELECT stock FROM disponibilidad WHERE store_id = $1 AND id_producto = $2',
-      [store_id, id_producto]
+      'SELECT stock FROM productos WHERE store_id = $1 AND id_producto = $2',
+      [3, id_producto] // store_id fijo en tu sistema
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Producto no encontrado en esta tienda" });
     }
 
-    // 👉 Solo devolvemos el stock, sin lógica de disponibilidad
+    const stock = result.rows[0].stock;
+
+    // 👉 Solo devolvemos lo que pediste
     res.json({
-      store_id,
       id_producto,
-      stock: result.rows[0].stock
+      stock,
+      cantidad_solicitada
     });
   } catch (error) {
     console.error("❌ Error al verificar disponibilidad:", error.message);
@@ -35,3 +37,4 @@ router.post('/verificar', async (req, res) => {
 });
 
 module.exports = router;
+
