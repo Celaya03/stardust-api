@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db'); // conexión central a PostgreSQL
+const pool = require('../db');
 
 // 🔹 Procesar pago y registrar transacción
 router.post('/pago', async (req, res) => {
@@ -20,12 +20,12 @@ router.post('/pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log('📦 Respuesta del banco:', trx);
 
-    // 🔒 Enmascarar tarjeta (últimos 4 dígitos)
+    // 🔒 Enmascarar tarjeta
     const tarjeta = trx.NumeroTarjeta.toString();
     const ultimos4 = tarjeta.slice(-4);
     const tarjetaMasked = `****${ultimos4}`;
 
-    // Validar que todos los campos estén presentes
+    // Validar campos
     if (
       !trx.CreadaUTC || !trx.IdTransaccion || !trx.TipoTransaccion ||
       !trx.MontoTransaccion || !trx.Firma || !trx.Descripcion || !trx.NombreEstado
@@ -34,11 +34,11 @@ router.post('/pago', async (req, res) => {
       return res.status(400).json({ error: 'Respuesta incompleta del banco' });
     }
 
-    // Guardar en la BD directamente con NombreEstado
+    // 🔄 Insertar en el orden correcto
     const insertSQL = `
       INSERT INTO transacciones_banco (
-        CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-        NumeroTarjeta, NombreEstado, Firma, Descripcion
+        creadautc, montotransaccion, tipotransaccion, descripcion,
+        numerotarjeta, nombreestado, firma, idtransaccion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
@@ -46,13 +46,13 @@ router.post('/pago', async (req, res) => {
 
     const values = [
       trx.CreadaUTC,
-      trx.IdTransaccion,
-      trx.TipoTransaccion,
       trx.MontoTransaccion,
+      trx.TipoTransaccion,
+      trx.Descripcion,
       tarjetaMasked,
       trx.NombreEstado,
       trx.Firma,
-      trx.Descripcion
+      trx.IdTransaccion
     ];
 
     console.log('🗄️ Insertando en BD con:', values);
