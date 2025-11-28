@@ -26,14 +26,14 @@ router.post('/procesar-pago', async (req, res) => {
     console.log("📥 Respuesta del banco:", trx);
 
     const values = [
-      trx.CreadaUTC,
-      trx.IdTransaccion,
-      trx.TipoTransaccion,
-      trx.MontoTransaccion,
-      trx.NumeroTarjeta,
-      trx.NombreEstado,
-      trx.Firma,
-      trx.Descripcion
+      trx.creadaUTC,
+      trx.idtransaccion,
+      trx.tipotransaccion,
+      trx.montotransaccion,
+      trx.numerotarjeta,
+      trx.nombreestado,
+      trx.firma,
+      trx.descripcion
     ];
 
     // Verificar valores antes de insertar
@@ -45,14 +45,14 @@ router.post('/procesar-pago', async (req, res) => {
 
     const insertSQL = `
       INSERT INTO transacciones_banco (
-        CreadaUTC,
-        IdTransaccion,
-        TipoTransaccion,
-        MontoTransaccion,
-        NumeroTarjeta,
-        NombreEstado,
+        creadaUTC,
+        idtransaccion,
+        tipotransaccion,
+        montotransaccion,
+        numerotarjeta,
+        nombreestado,
         Firma,
-        Descripcion
+        descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
