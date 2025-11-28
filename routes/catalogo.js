@@ -1,25 +1,21 @@
-// routes/catalogo.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // conexión a PostgreSQL
 
-router.post('/', async (req, res) => {
-  const { api_url } = req.body;
-
-  if (!api_url) {
-    return res.status(400).json({ error: "Faltan parámetros en la petición" });
-  }
-
+// 👉 GET sin body, responde con todo el catálogo de la tienda 3
+router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id_producto, nombre, precio, stock FROM productos',
-      [store_id]
+      'SELECT id_producto, nombre, precio, stock, categoria FROM productos WHERE store_id = $1',
+      [3] // 👈 store_id fijo para tu tienda
     );
 
-    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No hay productos en esta tienda" });
+    }
 
-    // 👉 Respuesta con catálogo
     res.json({
+      store_id: 3,
       productos: result.rows
     });
   } catch (error) {
@@ -29,5 +25,6 @@ router.post('/', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
