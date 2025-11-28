@@ -18,6 +18,7 @@ router.post('/pago', async (req, res) => {
     );
 
     const trx = respuestaBanco.data;
+    console.log('📦 Respuesta del banco:', trx);
 
     // 🔒 Enmascarar tarjeta (últimos 4 dígitos)
     const tarjeta = trx.NumeroTarjeta.toString();
@@ -26,11 +27,12 @@ router.post('/pago', async (req, res) => {
 
     // 🔍 Obtener el id del estado desde la tabla estado_transaccion
     const estadoResult = await pool.query(
-      'SELECT id_estado_transaccion FROM estado_transaccion WHERE nombre = $1',
+      'SELECT id_estado_transaccion FROM estado_transaccion WHERE LOWER(nombre) = LOWER($1)',
       [trx.NombreEstado]
     );
 
     const idEstado = estadoResult.rows[0]?.id_estado_transaccion || null;
+    console.log('🧾 ID del estado obtenido:', idEstado);
 
     // Guardar en la BD
     const insertSQL = `
@@ -53,7 +55,9 @@ router.post('/pago', async (req, res) => {
       trx.Descripcion
     ];
 
+    console.log('🗄️ Insertando en BD con:', values);
     const result = await pool.query(insertSQL, values);
+    console.log('✅ Transacción guardada:', result.rows[0]);
 
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
@@ -62,7 +66,8 @@ router.post('/pago', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error procesando pago:', error);
+    console.error('❌ Error procesando pago:', error.message);
+    if (error.stack) console.error(error.stack);
     return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
 });
@@ -78,11 +83,13 @@ router.get('/transacciones_banco', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ Error consultando transacciones:', err.message);
     res.status(500).json({ error: "Error consultando transacciones" });
   }
 });
 
 module.exports = router;
+
 
 
 
