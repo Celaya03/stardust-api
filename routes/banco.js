@@ -1,14 +1,16 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db');
+const pool = require('../db'); // conexión central a PostgreSQL
 
+// 🔹 Procesar pago y registrar transacción
 router.post('/pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /pago:', new Date().toISOString());
 
   try {
     const datosPago = req.body;
 
+    // Enviar al API del banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
@@ -46,15 +48,6 @@ router.post('/pago', async (req, res) => {
         numerotarjeta, nombreestado, firma, idtransaccion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      ON CONFLICT (idtransaccion)
-      DO UPDATE SET
-        creadautc = EXCLUDED.creadautc,
-        montotransaccion = EXCLUDED.montotransaccion,
-        tipotransaccion = EXCLUDED.tipotransaccion,
-        descripcion = EXCLUDED.descripcion,
-        numerotarjeta = EXCLUDED.numerotarjeta,
-        nombreestado = EXCLUDED.nombreestado,
-        firma = EXCLUDED.firma
       RETURNING *;
     `;
 
@@ -70,11 +63,26 @@ router.post('/pago', async (req, res) => {
   } catch (error) {
     console.error('❌ Error procesando pago:', error.message);
     if (error.stack) console.error(error.stack);
-    return res.status(500).json({ error: 'Error interno procesando el pago.' });
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 🔹 Consultar todas las transacciones
+router.get('/transacciones_banco', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM transacciones_banco
+      ORDER BY id ASC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('❌ Error consultando transacciones:', err.message);
+    res.status(500).json({ error: "Error consultando transacciones" });
   }
 });
 
 module.exports = router;
+
 
 
 
