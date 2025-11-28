@@ -23,8 +23,7 @@ router.post('/', async (req, res) => {
     // 👉 Respuesta con catálogo
     res.json({
       store_id,
-      category,
-      api_url, // lo devuelves si ellos lo quieren ver reflejado
+      category,// lo devuelves si ellos lo quieren ver reflejado
       productos: result.rows
     });
   } catch (error) {
