@@ -19,26 +19,26 @@ router.post('/pago', async (req, res) => {
     console.log('📦 Respuesta del banco:', trx);
 
     // 🔒 Enmascarar tarjeta
-    const tarjeta = trx.NumeroTarjeta.toString();
+    const tarjeta = trx.NumeroTarjeta?.toString() || '';
     const ultimos4 = tarjeta.slice(-4);
-    const tarjetaMasked = `****${ultimos4}`;
+    const tarjetaMasked = tarjeta ? `****${ultimos4}` : null;
 
     // 🔄 Conversión de tipos
-    const creadaUTC = new Date(trx.CreadaUTC); // TIMESTAMP válido
-    const monto = Number(trx.MontoTransaccion); // NUMERIC válido
+    const creadaUTC = trx.CreadaUTC ? new Date(trx.CreadaUTC) : new Date();
+    const monto = Number(trx.MontoTransaccion) || 0;
 
     const values = [
       creadaUTC,
       monto,
-      trx.TipoTransaccion,
-      trx.Descripcion,
+      trx.TipoTransaccion || 'DESCONOCIDO',
+      trx.Descripcion || '',
       tarjetaMasked,
-      trx.NombreEstado,
-      trx.Firma,
-      trx.IdTransaccion
+      trx.NombreEstado || 'PENDIENTE',
+      trx.Firma || '',
+      trx.IdTransaccion || 'SIN-ID'
     ];
 
-    console.log('🗄️ Insertando en BD con:', values);
+    console.log('🗄️ Valores a insertar:', values);
 
     const insertSQL = `
       INSERT INTO transacciones_banco (
@@ -46,6 +46,15 @@ router.post('/pago', async (req, res) => {
         numerotarjeta, nombreestado, firma, idtransaccion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      ON CONFLICT (idtransaccion)
+      DO UPDATE SET
+        creadautc = EXCLUDED.creadautc,
+        montotransaccion = EXCLUDED.montotransaccion,
+        tipotransaccion = EXCLUDED.tipotransaccion,
+        descripcion = EXCLUDED.descripcion,
+        numerotarjeta = EXCLUDED.numerotarjeta,
+        nombreestado = EXCLUDED.nombreestado,
+        firma = EXCLUDED.firma
       RETURNING *;
     `;
 
@@ -66,6 +75,7 @@ router.post('/pago', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
