@@ -26,14 +26,14 @@ router.post('/procesar-pago', async (req, res) => {
     console.log("📥 Respuesta del banco:", trx);
 
     const values = [
-      trx.creadaUTC,
-      trx.idtransaccion,
-      trx.tipotransaccion,
-      trx.montotransaccion,
-      trx.numerotarjeta,
-      trx.nombreestado,
-      trx.firma,
-      trx.descripcion
+      trx.CreadaUTC,
+      trx.IdTransaccion,
+      trx.TipoTransaccion,
+      trx.MontoTransaccion,
+      trx.NumeroTarjeta,
+      trx.NombreEstado,
+      trx.Firma,
+      trx.Descripcion
     ];
 
     // Verificar valores antes de insertar
