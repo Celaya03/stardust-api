@@ -10,10 +10,15 @@ router.post('/procesar-pago', async (req, res) => {
   try {
     const datosPago = req.body;
 
-    const { NumeroTarjetaOrigen, NumeroTarjetaDestino, NombreCliente, MesExp, AnioExp, Cvv, Monto } = datosPago;
-    if (!NumeroTarjetaOrigen || !NumeroTarjetaDestino || !NombreCliente || !MesExp || !AnioExp || !Cvv || !Monto) {
-      console.warn("⚠️ Body incompleto:", datosPago);
-      return res.status(400).json({ error: "Faltan parámetros en la petición" });
+    const camposObligatorios = [
+      'NumeroTarjetaOrigen', 'NumeroTarjetaDestino', 'NombreCliente',
+      'MesExp', 'AnioExp', 'Cvv', 'Monto'
+    ];
+
+    const faltantes = camposObligatorios.filter(campo => !datosPago[campo]);
+    if (faltantes.length > 0) {
+      console.warn("⚠️ Body incompleto. Faltan:", faltantes);
+      return res.status(400).json({ error: "Faltan parámetros", faltantes });
     }
 
     // Mandar al banco
@@ -77,7 +82,7 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
-// Consultar transacciones registradas
+// Consultar todas las transacciones
 router.get('/transacciones_banco', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
@@ -88,7 +93,23 @@ router.get('/transacciones_banco', async (req, res) => {
   }
 });
 
+// Consultar solo transacciones rechazadas
+router.get('/transacciones_banco/rechazadas', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM transacciones_banco
+      WHERE nombreestado = 'RECHAZADA'
+      ORDER BY id DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error consultando rechazadas:", err.message);
+    res.status(500).json({ error: "Error consultando transacciones rechazadas" });
+  }
+});
+
 module.exports = router;
+
 
 
 
