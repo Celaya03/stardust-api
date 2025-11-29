@@ -16,6 +16,7 @@ router.post('/procesar-pago', async (req, res) => {
       return res.status(400).json({ error: "Faltan parámetros en la petición" });
     }
 
+    // Mandar al banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
@@ -25,6 +26,7 @@ router.post('/procesar-pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log("📥 Respuesta del banco:", trx);
 
+    // Usar propiedades con mayúsculas (como vienen del banco)
     const values = [
       trx.CreadaUTC,
       trx.IdTransaccion,
@@ -36,29 +38,22 @@ router.post('/procesar-pago', async (req, res) => {
       trx.Descripcion
     ];
 
-    // Verificar valores antes de insertar
-    for (let i = 0; i < values.length; i++) {
-      if (values[i] === undefined || values[i] === null) {
-        console.warn(`⚠️ Valor faltante en posición ${i}:`, values[i]);
-      }
-    }
+    console.log("📦 Valores a insertar:", values);
 
     const insertSQL = `
       INSERT INTO transacciones_banco (
-        creadaUTC,
+        creadautc,
         idtransaccion,
         tipotransaccion,
         montotransaccion,
         numerotarjeta,
         nombreestado,
-        Firma,
+        firma,
         descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
     `;
-
-    console.log("📦 Intentando insertar en BD:", values);
 
     let result;
     try {
@@ -95,6 +90,7 @@ router.get('/transacciones_banco', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
