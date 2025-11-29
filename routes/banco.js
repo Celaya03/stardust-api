@@ -26,34 +26,32 @@ router.post('/procesar-pago', async (req, res) => {
     const trx = respuestaBanco.data;
     console.log("📥 Respuesta del banco:", trx);
 
-    // Usar propiedades con mayúsculas (como vienen del banco)
-    const values = [
-      trx.CreadaUTC,
-      trx.IdTransaccion,
-      trx.TipoTransaccion,
-      trx.MontoTransaccion,
-      trx.NumeroTarjeta,
-      trx.NombreEstado,
-      trx.Firma,
-      trx.Descripcion
-    ];
+ const values = [
+  trx.CreadaUTC,       // propiedad del banco
+  trx.IdTransaccion,
+  trx.TipoTransaccion,
+  trx.MontoTransaccion,
+  trx.NumeroTarjeta,
+  trx.NombreEstado,
+  trx.Firma,
+  trx.Descripcion
+];
 
-    console.log("📦 Valores a insertar:", values);
+const insertSQL = `
+  INSERT INTO transacciones_banco (
+    creadautc,
+    idtransaccion,
+    tipotransaccion,
+    montotransaccion,
+    numerotarjeta,
+    nombreestado,
+    firma,
+    descripcion
+  )
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+  RETURNING *;
+`;
 
-    const insertSQL = `
-      INSERT INTO transacciones_banco (
-        creadautc,
-        idtransaccion,
-        tipotransaccion,
-        montotransaccion,
-        numerotarjeta,
-        nombreestado,
-        firma,
-        descripcion
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      RETURNING *;
-    `;
 
     let result;
     try {
