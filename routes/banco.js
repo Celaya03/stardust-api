@@ -69,7 +69,7 @@ const values = [
 });
 
 //  GET /api/transacciones_banco
-router.get('/transacciones_banco', async (req, res) => {
+router.get('/procesar-pago', async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
         res.json(result.rows);
