@@ -9,6 +9,9 @@ router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
     try {
+      const dbCheck = await pool.query('SELECT current_database()');
+console.log("🧠 Base conectada:", dbCheck.rows[0].current_database);
+
     // Usa los datos enviados desde Postman
     //const datosPago = req.body;
 
