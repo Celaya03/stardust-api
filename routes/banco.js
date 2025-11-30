@@ -1,4 +1,5 @@
-﻿const express = require('express');
+﻿
+const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
@@ -7,21 +8,22 @@ const pool = require('../db'); // conexión central a PostgreSQL
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
-  try {
-    const datosPago = req.body;
+    try {
+    // Usa los datos enviados desde Postman
+    //const datosPago = req.body;
 
-    const camposObligatorios = [
-      'NumeroTarjetaOrigen', 'NumeroTarjetaDestino', 'NombreCliente',
-      'MesExp', 'AnioExp', 'Cvv', 'Monto'
-    ];
+    // Datos fijos de prueba
+    const datosPago = {
+      NumeroTarjetaOrigen: "3131313131313131",
+      NumeroTarjetaDestino: "8181818181818181",
+      NombreCliente: "Ernesto Ibarra",
+      MesExp: 12,
+      AnioExp: 2028,
+      Cvv: "123",
+      Monto: 150.25
+    };
 
-    const faltantes = camposObligatorios.filter(campo => !datosPago[campo]);
-    if (faltantes.length > 0) {
-      console.warn("⚠️ Body incompleto. Faltan:", faltantes);
-      return res.status(400).json({ error: "Faltan parámetros", faltantes });
-    }
-
-    // Mandar al banco
+    // Enviar al API del banco
     const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
@@ -29,83 +31,51 @@ router.post('/procesar-pago', async (req, res) => {
     );
 
     const trx = respuestaBanco.data;
-    console.log("📥 Respuesta completa del banco:", JSON.stringify(trx, null, 2));
 
-    const values = [
-      trx.CreadaUTC,
-      trx.IdTransaccion,
-      trx.TipoTransaccion,
-      trx.MontoTransaccion,
-      trx.NumeroTarjeta,
-      trx.NombreEstado,
-      trx.Firma,
-      trx.Descripcion
-    ];
-
-    console.log("📦 Valores a insertar:", values);
-
+    // Guardar en la BD
     const insertSQL = `
-      INSERT INTO transacciones_banco (
-        creadautc,
-        idtransaccion,
-        tipotransaccion,
-        montotransaccion,
-        numerotarjeta,
-        nombreestado,
-        firma,
-        descripcion
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      RETURNING *;
-    `;
+  INSERT INTO transacciones_banco (
+    creadautc, idtransaccion, tipotransaccion, montotransaccion,
+    numerotarjeta, nombreestado, firma, descripcion
+  )
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+  RETURNING *;
+`;
 
-    let result;
-    try {
-      result = await pool.query(insertSQL, values);
-      console.log("✅ Transacción guardada en BD:", result.rows[0]);
-    } catch (dbError) {
-      console.error("❌ ERROR REAL DE BD:", dbError.stack);
-      return res.status(500).json({
-        error: "Error guardando en la base de datos",
-        detalle: dbError.message
-      });
-    }
+const values = [
+  trx.CreadaUTC,
+  trx.IdTransaccion,
+  trx.TipoTransaccion,
+  trx.MontoTransaccion,
+  trx.NumeroTarjeta,
+  trx.NombreEstado,
+  trx.Firma,
+  trx.Descripcion // ← asegúrate de que el banco te manda este campo
+];
 
+    const result = await pool.query(insertSQL, values);
+
+    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
       banco: trx
     });
+
   } catch (error) {
-    console.error('❌ Error procesando pago:', error.response?.data || error.message);
+    console.error('Error procesando pago:', error);
     return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
 });
 
-// Consultar todas las transacciones
+//  GET /api/transacciones_banco
 router.get('/transacciones_banco', async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
-    res.json(result.rows);
-  } catch (err) {
-    console.error("❌ Error consultando transacciones:", err.message);
-    res.status(500).json({ error: "Error consultando transacciones" });
-  }
-});
-
-// Consultar solo transacciones rechazadas
-router.get('/transacciones_banco/rechazadas', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT * FROM transacciones_banco
-      WHERE nombreestado = 'RECHAZADA'
-      ORDER BY id DESC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error("❌ Error consultando rechazadas:", err.message);
-    res.status(500).json({ error: "Error consultando transacciones rechazadas" });
-  }
+    try {
+        const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Error consultando transacciones" });
+    }
 });
 
 module.exports = router;
