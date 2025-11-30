@@ -27,13 +27,16 @@ console.log("🧠 Base conectada:", dbCheck.rows[0].current_database);
     };
 
     // Enviar al API del banco
-    const respuestaBanco = await axios.post(
+    const respuestabanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
       { headers: { 'Content-Type': 'application/json' } }
     );
 
-    const trx = respuestaBanco.data;
+    const trx = respuestabanco.data;
+     
+ 
+
 
     // Guardar en la BD
     const insertSQL = `
@@ -72,7 +75,7 @@ const values = [
 });
 
 //  GET /api/transacciones_banco
-router.get('/procesar-pago', async (req, res) => {
+router.get('/transacciones_banco', async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
         res.json(result.rows);
