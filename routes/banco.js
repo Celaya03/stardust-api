@@ -1,5 +1,4 @@
-﻿
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
@@ -8,14 +7,8 @@ const pool = require('../db'); // conexión central a PostgreSQL
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
-    try {
-      const dbCheck = await pool.query('SELECT current_database()');
-console.log("🧠 Base conectada:", dbCheck.rows[0].current_database);
-
-    // Usa los datos enviados desde Postman
-    //const datosPago = req.body;
-
-    // Datos fijos de prueba
+  try {
+    // Datos fijos de prueba (puedes cambiar por req.body si quieres usar Postman)
     const datosPago = {
       NumeroTarjetaOrigen: "3131313131313131",
       NumeroTarjetaDestino: "8181818181818181",
@@ -27,41 +20,52 @@ console.log("🧠 Base conectada:", dbCheck.rows[0].current_database);
     };
 
     // Enviar al API del banco
-    const respuestabanco = await axios.post(
+    const respuestaBanco = await axios.post(
       'https://bancarata.vercel.app/api/bank',
       datosPago,
       { headers: { 'Content-Type': 'application/json' } }
     );
 
-    const trx = respuestabanco.data;
-     
- 
+    const trx = respuestaBanco.data;
+    console.log("📥 Respuesta del banco:", trx);
 
+    // Extraer valores respetando mayúsculas de la respuesta
+    const {
+      CreadaUTC,
+      IdTransaccion,
+      TipoTransaccion,
+      MontoTransaccion,
+      NumeroTarjeta,
+      NombreEstado,
+      Firma,
+      Descripcion
+    } = trx;
 
-    // Guardar en la BD
+    const values = [
+      CreadaUTC,
+      IdTransaccion,
+      TipoTransaccion,
+      MontoTransaccion,
+      NumeroTarjeta,
+      NombreEstado,
+      Firma,
+      Descripcion || 'Sin descripción'
+    ];
+
+    console.log("📦 Valores a insertar:", values);
+
+    // Insertar en la tabla (todo en minúsculas)
     const insertSQL = `
-  INSERT INTO transacciones_banco (
-    creadautc, idtransaccion, tipotransaccion, montotransaccion,
-    numerotarjeta, nombreestado, firma, descripcion
-  )
-  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-  RETURNING *;
-`;
-
-const values = [
-  trx.CreadaUTC,
-  trx.IdTransaccion,
-  trx.TipoTransaccion,
-  trx.MontoTransaccion,
-  trx.NumeroTarjeta,
-  trx.NombreEstado,
-  trx.Firma,
-  trx.Descripcion // ← asegúrate de que el banco te manda este campo
-];
+      INSERT INTO transacciones_banco (
+        creadautc, idtransaccion, tipotransaccion, montotransaccion,
+        numerotarjeta, nombreestado, firma, descripcion
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING *;
+    `;
 
     const result = await pool.query(insertSQL, values);
 
-    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
@@ -69,19 +73,20 @@ const values = [
     });
 
   } catch (error) {
-    console.error('Error procesando pago:', error);
+    console.error('❌ ERROR REAL DE BD:', error.stack);
     return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
 });
 
-//  GET /api/transacciones_banco
-router.get('/transacciones_banco', async (req, res) => {
-    try {
-        const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: "Error consultando transacciones" });
-    }
+// GET /api/banco/transacciones
+router.get('/transacciones', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error consultando transacciones:", err.message);
+    res.status(500).json({ error: "Error consultando transacciones" });
+  }
 });
 
 module.exports = router;
