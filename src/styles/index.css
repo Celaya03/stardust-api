@@ -4,11 +4,30 @@ body {
   background-color: #f5f5f5;
   color: #333;
 }
-nav a {
+
+/* Navbar básica */
+nav {
+  background-color: #eee;
+  padding: 1rem;
+}
+
+/* Usamos flexbox para organizar los enlaces en fila */
+nav .nav-links {
+  display: flex;
+  gap: 1rem;             /* espacio entre enlaces */
+  /* opcional: centrar horizontalmente nav */
+  /* justify-content: center; */
+}
+
+/* Estilos para los links */
+nav .nav-links a {
   text-decoration: none;
   color: #0077cc;
+  padding: 0.25rem 0.5rem;
 }
-nav a:hover {
+
+/* Hover */
+nav .nav-links a:hover {
   text-decoration: underline;
 }
 
