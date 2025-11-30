@@ -1,35 +1,15 @@
 ﻿const express = require('express');
 const router = express.Router();
-const axios = require('axios');
-const pool = require('../db'); // conexión a PostgreSQL
+const pool = require('../db');
 
-// Procesar pago y registrar transacción
+// POST /api/banco/procesar-pago
 router.post('/procesar-pago', async (req, res) => {
-  console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
+  console.log('📨 Entró a /procesar-pago');
 
   try {
-    // Datos de prueba (puedes cambiar por req.body si quieres usar Postman)
-    const datosPago = {
-      NumeroTarjetaOrigen: "3131313131313131",
-      NumeroTarjetaDestino: "8181818181818181",
-      NombreCliente: "Ernesto Ibarra",
-      MesExp: 12,
-      AnioExp: 2028,
-      Cvv: "123",
-      Monto: 150.25
-    };
+    const trx = req.body; // ahora recibes directamente la respuesta del banco
+    console.log("📥 Datos recibidos:", JSON.stringify(trx, null, 2));
 
-    // Enviar al API del banco
-    const respuestaBanco = await axios.post(
-      'https://bancarata.vercel.app/api/bank',
-      datosPago,
-      { headers: { 'Content-Type': 'application/json' } }
-    );
-
-    const trx = respuestaBanco.data;
-    console.log("📥 Respuesta completa del banco:", JSON.stringify(trx, null, 2));
-
-    // Extraer valores respetando mayúsculas de la respuesta
     const {
       CreadaUTC,
       IdTransaccion,
@@ -45,7 +25,7 @@ router.post('/procesar-pago', async (req, res) => {
       CreadaUTC,
       IdTransaccion,
       TipoTransaccion,
-      Number(MontoTransaccion), // fuerza a número
+      Number(MontoTransaccion),
       NumeroTarjeta,
       NombreEstado,
       Firma,
@@ -54,7 +34,6 @@ router.post('/procesar-pago', async (req, res) => {
 
     console.log("📦 Valores a insertar:", values);
 
-    // Insertar en la tabla (todo en minúsculas)
     const insertSQL = `
       INSERT INTO transacciones_banco (
         creadautc, idtransaccion, tipotransaccion, montotransaccion,
@@ -67,41 +46,24 @@ router.post('/procesar-pago', async (req, res) => {
     const result = await pool.query(insertSQL, values);
 
     if (result.rows.length > 0) {
-      console.log("✅ Fila insertada correctamente:", result.rows[0]);
+      console.log("✅ Fila insertada:", result.rows[0]);
     } else {
       console.log("⚠️ El INSERT no devolvió ninguna fila");
     }
 
-    return res.status(200).json({
-      mensaje: 'Pago procesado y registrado',
-      transaccion: result.rows[0],
-      banco: trx
+    res.status(200).json({
+      mensaje: 'Transacción registrada',
+      transaccion: result.rows[0]
     });
 
   } catch (error) {
-    console.error('❌ ERROR REAL DE BD:', error.stack);
-    return res.status(500).json({ error: 'Error interno procesando el pago.' });
-  }
-});
-
-// Endpoint de prueba para confirmar conexión
-router.get('/ping', (req, res) => {
-  console.log("✅ Entró a /ping");
-  res.send("pong");
-});
-
-// GET /api/banco/transacciones
-router.get('/transacciones', async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
-    res.json(result.rows);
-  } catch (err) {
-    console.error("❌ Error consultando transacciones:", err.message);
-    res.status(500).json({ error: "Error consultando transacciones" });
+    console.error("❌ ERROR en /procesar-pago:", error.stack);
+    res.status(500).json({ error: 'Error interno procesando la transacción.' });
   }
 });
 
 module.exports = router;
+
 
 
 
