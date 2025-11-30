@@ -5,6 +5,7 @@ export default function Navbar() {
     <nav>
       <div className="nav-links">
         <Link to="/" style={{ marginRight: 0 }}>Home</Link>
+        <Link to="/Catalogo">Catalogo</Link>
         <Link to="/Disponibilidad">Disponibilidad</Link>
         <Link to="/Envios">Envios</Link>
         <Link to="/Gestion">Gestion</Link>
@@ -13,6 +14,7 @@ export default function Navbar() {
     </nav>
   );
 }
+
 
 
 
