@@ -57,8 +57,8 @@ router.post('/procesar-pago', async (req, res) => {
     // Insertar en la tabla (todo en minúsculas)
     const insertSQL = `
       INSERT INTO transacciones_banco (
-        CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-        NumeroTarjeta, NombreEstado, Firma, Descripcion
+        creadautc, idtransaccion, tipotransaccion, montotransaccion,
+        numerotarjeta, nombreestado, firma, descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
