@@ -1,18 +1,16 @@
-import React from "react";
-import { Link } from "react-router-dom";
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stardust Client</title>
+    <!-- Puedes agregar favicon u otros <link> si lo necesitas -->
+    <!-- <link rel="icon" href="/favicon.ico" /> -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Vite/During Dev o Build usará este script como entrada -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
 
-export default function Home() {
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Bienvenido al sistema</h1>
-      <p>Seleccione una opción del menú:</p>
-      <ul>
-        <li><Link to="/catalogo">Catálogo de productos</Link></li>
-        <li><Link to="/disponibilidad">Verificar disponibilidad</Link></li>
-        <li><Link to="/venta">Registrar venta</Link></li>
-        <li><Link to="/envios">Envíos / Webhook</Link></li>
-        <li><Link to="/gestion">Panel de gestión</Link></li>
-      </ul>
-    </div>
-  );
-}
