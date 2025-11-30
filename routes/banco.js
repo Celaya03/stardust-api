@@ -1,14 +1,14 @@
 ﻿const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../db'); // conexión central a PostgreSQL
+const pool = require('../db'); // conexión a PostgreSQL
 
 // Procesar pago y registrar transacción
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
   try {
-    // Datos fijos de prueba (puedes cambiar por req.body si quieres usar Postman)
+    // Datos de prueba (puedes cambiar por req.body si quieres usar Postman)
     const datosPago = {
       NumeroTarjetaOrigen: "3131313131313131",
       NumeroTarjetaDestino: "8181818181818181",
@@ -27,7 +27,7 @@ router.post('/procesar-pago', async (req, res) => {
     );
 
     const trx = respuestaBanco.data;
-    console.log("📥 Respuesta del banco:", trx);
+    console.log("📥 Respuesta completa del banco:", JSON.stringify(trx, null, 2));
 
     // Extraer valores respetando mayúsculas de la respuesta
     const {
@@ -45,11 +45,11 @@ router.post('/procesar-pago', async (req, res) => {
       CreadaUTC,
       IdTransaccion,
       TipoTransaccion,
-      MontoTransaccion,
+      Number(MontoTransaccion), // fuerza a número
       NumeroTarjeta,
       NombreEstado,
       Firma,
-      Descripcion 
+      Descripcion || 'Sin descripción'
     ];
 
     console.log("📦 Valores a insertar:", values);
@@ -66,6 +66,12 @@ router.post('/procesar-pago', async (req, res) => {
 
     const result = await pool.query(insertSQL, values);
 
+    if (result.rows.length > 0) {
+      console.log("✅ Fila insertada correctamente:", result.rows[0]);
+    } else {
+      console.log("⚠️ El INSERT no devolvió ninguna fila");
+    }
+
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
@@ -76,6 +82,12 @@ router.post('/procesar-pago', async (req, res) => {
     console.error('❌ ERROR REAL DE BD:', error.stack);
     return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
+});
+
+// Endpoint de prueba para confirmar conexión
+router.get('/ping', (req, res) => {
+  console.log("✅ Entró a /ping");
+  res.send("pong");
 });
 
 // GET /api/banco/transacciones
@@ -90,6 +102,7 @@ router.get('/transacciones', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
