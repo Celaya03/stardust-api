@@ -25,11 +25,11 @@ router.post('/procesar-pago', async (req, res) => {
       trx.CreadaUTC,
       trx.IdTransaccion,
       trx.TipoTransaccion,
-      Number(trx.MontoTransaccion),
+      trx.MontoTransaccion,
       trx.NumeroTarjeta,
       trx.NombreEstado,
       trx.Firma,
-      trx.Descripcion || 'Sin descripción'
+      trx.Descripcion 
     ];
 
     console.log("📦 Valores a insertar:", values);
