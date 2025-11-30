@@ -2,34 +2,34 @@
 const router = express.Router();
 const pool = require('../db');
 
-// POST /api/banco/procesar-pago
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Entró a /procesar-pago');
 
   try {
-    const trx = req.body; // ahora recibes directamente la respuesta del banco
+    const trx = req.body;
     console.log("📥 Datos recibidos:", JSON.stringify(trx, null, 2));
 
-    const {
-      CreadaUTC,
-      IdTransaccion,
-      TipoTransaccion,
-      MontoTransaccion,
-      NumeroTarjeta,
-      NombreEstado,
-      Firma,
-      Descripcion
-    } = trx;
+    const requiredFields = [
+      'CreadaUTC', 'IdTransaccion', 'TipoTransaccion',
+      'MontoTransaccion', 'NumeroTarjeta', 'NombreEstado',
+      'Firma', 'Descripcion'
+    ];
+
+    for (const field of requiredFields) {
+      if (!trx[field]) {
+        throw new Error(`Campo faltante o vacío: ${field}`);
+      }
+    }
 
     const values = [
-      CreadaUTC,
-      IdTransaccion,
-      TipoTransaccion,
-      Number(MontoTransaccion),
-      NumeroTarjeta,
-      NombreEstado,
-      Firma,
-      Descripcion || 'Sin descripción'
+      trx.CreadaUTC,
+      trx.IdTransaccion,
+      trx.TipoTransaccion,
+      Number(trx.MontoTransaccion),
+      trx.NumeroTarjeta,
+      trx.NombreEstado,
+      trx.Firma,
+      trx.Descripcion || 'Sin descripción'
     ];
 
     console.log("📦 Valores a insertar:", values);
@@ -45,11 +45,11 @@ router.post('/procesar-pago', async (req, res) => {
 
     const result = await pool.query(insertSQL, values);
 
-    if (result.rows.length > 0) {
-      console.log("✅ Fila insertada:", result.rows[0]);
-    } else {
-      console.log("⚠️ El INSERT no devolvió ninguna fila");
+    if (result.rows.length === 0) {
+      throw new Error("El INSERT no devolvió ninguna fila");
     }
+
+    console.log("✅ Fila insertada:", result.rows[0]);
 
     res.status(200).json({
       mensaje: 'Transacción registrada',
@@ -57,8 +57,8 @@ router.post('/procesar-pago', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ ERROR en /procesar-pago:", error.stack);
-    res.status(500).json({ error: 'Error interno procesando la transacción.' });
+    console.error("❌ ERROR en /procesar-pago:", error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
