@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import { Routes, Route } from "react-router-dom";
 import Catalogo from "./pages/Catalogo";
 import Disponibilidad from "./pages/Disponibilidad";
 import Venta from "./pages/Venta";
@@ -8,7 +8,7 @@ import Gestion from "./pages/Gestion";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <>
       <Navbar />
       <Routes>
         <Route path="/" element={<Catalogo />} />
@@ -17,6 +17,7 @@ export default function App() {
         <Route path="/envios" element={<Envios />} />
         <Route path="/gestion" element={<Gestion />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
+
