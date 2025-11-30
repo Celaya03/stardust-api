@@ -32,14 +32,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Stardust Cafetería API' });
 });
 
-/* ============================
-   IMPORTACIÓN DE RUTAS
-   ============================ */
-
-// Banco (procesar pagos y transacciones)
+//banco
 const bancoRoutes = require('./routes/banco');
 app.use('/api/banco', bancoRoutes);
 
+//banco
+const bancoRoutes = require('./routes/banco');
+app.use('/api/banco', bancoRoutes)
 
 // Envíos (webhook y movimientos)
 const enviosRoutes = require('./routes/envios');
