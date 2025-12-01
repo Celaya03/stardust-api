@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { apiGet } from "../services/api"; // tu helper para fetch/axios
 
-export default function Transacciones() {
+export default function Envios() {
   const [transacciones, setTransacciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,3 +56,4 @@ export default function Transacciones() {
     </div>
   );
 }
+
