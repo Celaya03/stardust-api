@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { apiGet } from "../services/api"; // tu helper para fetch/axios
+import { apiGet } from "../services/api";
 
-export default function Envios() {
+export default function Transacciones() {
   const [transacciones, setTransacciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -9,7 +9,7 @@ export default function Envios() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await apiGet("/api/envios/procesar-pago");
+        const data = await apiGet("/procesar-pago");  // o la ruta correcta de tu backend
         setTransacciones(data);
       } catch (err) {
         console.error("Error al obtener transacciones:", err);
@@ -29,35 +29,38 @@ export default function Envios() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="table-container">
       <h2>Historial de Transacciones</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>ID Transacción</th>
-            <th>Monto</th>
-            <th>Tipo</th>
-            <th>Estado</th>
-            <th>Fecha</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transacciones.map((t) => (
-            <tr key={t.idtransaccion}>
-              <td>{t.idtransaccion}</td>
-              <td>{t.montotransaccion}</td>
-              <td>{t.tipotransaccion}</td>
-              <td>{t.nombreestado}</td>
-              <td>{new Date(t.creadautc).toLocaleString()}</td>
+      <div className="table-wrapper">
+        <table className="transactions-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>ID Transacción</th>
+              <th>Tipo</th>
+              <th>Monto</th>
+              <th>Número Tarjeta</th>
+              <th>Estado</th>
+              <th>Firma</th>
+              <th>Descripción</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {transacciones.map((t) => (
+              <tr key={t.idtransaccion}>
+                <td>{new Date(t.creadautc).toLocaleString()}</td>
+                <td>{t.idtransaccion}</td>
+                <td>{t.tipotransaccion}</td>
+                <td>{t.montotransaccion}</td>
+                <td>{t.numerotarjeta}</td>
+                <td>{t.nombreestado}</td>
+                <td>{t.firma}</td>
+                <td>{t.descripcion}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-
-
-
-
