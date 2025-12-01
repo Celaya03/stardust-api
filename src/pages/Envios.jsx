@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+simport React, { useState, useEffect } from "react";
 import { apiGet } from "../services/api"; // tu helper para fetch/axios
 
 export default function Envios() {
@@ -9,7 +9,7 @@ export default function Envios() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await apiGet("/procesar-pago");
+        const data = await apiGet("envios/procesar-pago");
         setTransacciones(data);
       } catch (err) {
         console.error("Error al obtener transacciones:", err);
@@ -56,4 +56,5 @@ export default function Envios() {
     </div>
   );
 }
+
 
