@@ -31,4 +31,45 @@ nav .nav-links a:hover {
   text-decoration: underline;
 }
 
+.table-container {
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.transactions-table thead {
+  background-color: #0077cc;
+  color: white;
+}
+
+.transactions-table th,
+.transactions-table td {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.transactions-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.transactions-table tbody tr:hover {
+  background-color: #e6f7ff;
+}
+
+.transactions-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 
