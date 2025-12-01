@@ -1,28 +1,58 @@
-import { useState } from "react";
-import { apiPost } from "../services/api";
+import React, { useState, useEffect } from "react";
+import { apiGet } from "../services/api"; // tu helper para fetch/axios
 
-export default function Envios() {
-  const [data, setData] = useState({});
-  const [resp, setResp] = useState(null);
+export default function Transacciones() {
+  const [transacciones, setTransacciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handle = e => setData({ ...data, [e.target.name]: e.target.value });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await apiGet("/procesar-pago");
+        setTransacciones(data);
+      } catch (err) {
+        console.error("Error al obtener transacciones:", err);
+        setError("Error cargando transacciones");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  async function enviarWebhook() {
-    setResp(await apiPost("/envios/webhook-envios", data));
+  if (loading) return <p>Cargando transacciones…</p>;
+  if (error) return <p>{error}</p>;
+
+  if (!transacciones || transacciones.length === 0) {
+    return <p>No se encontraron transacciones.</p>;
   }
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Simular Webhook de Envíos</h2>
-
-      <input name="id_orden_externa" onChange={handle} placeholder="ID Orden Externa" />
-      <input name="codigo_seguimiento" onChange={handle} placeholder="Tracking" />
-      <input name="estado_actual" onChange={handle} placeholder="Estado" />
-      <input name="ubicacion_actual" onChange={handle} placeholder="Ubicación" />
-
-      <button onClick={enviarWebhook}>Enviar</button>
-
-      {resp && <pre>{JSON.stringify(resp, null, 2)}</pre>}
+      <h2>Historial de Transacciones</h2>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th>ID Transacción</th>
+            <th>Monto</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          {transacciones.map((t) => (
+            <tr key={t.idtransaccion}>
+              <td>{t.idtransaccion}</td>
+              <td>{t.montotransaccion}</td>
+              <td>{t.tipotransaccion}</td>
+              <td>{t.nombreestado}</td>
+              <td>{new Date(t.creadautc).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
