@@ -9,11 +9,14 @@ export default function Catalogo() {
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        const res = await apiGet("/api/catalogo/");
-        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        const data = await res.json();
-        setProductos(data);
+        const data = await apiGet("/api/catalogo/");  // tu ruta
+        // suponiendo que data tiene { store_id, productos: [...] }
+        if (!data.productos) {
+          throw new Error("Respuesta inválida del servidor");
+        }
+        setProductos(data.productos);
       } catch (err) {
+        console.error("Error al obtener productos:", err);
         setError(err.message || "Error al cargar");
       } finally {
         setLoading(false);
@@ -28,21 +31,17 @@ export default function Catalogo() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Catálogo de productos</h2>
-      {productos.length === 0
-        ? <p>No hay productos disponibles.</p>
-        : (
-          <ul>
-            {productos.map(prod => (
-              <li key={prod.id}>
-                {prod.nombre} — ${prod.precio}
-              </li>
-            ))}
-          </ul>
-        )
-      }
+      {productos.length === 0 ? (
+        <p>No hay productos disponibles.</p>
+      ) : (
+        <ul>
+          {productos.map((prod) => (
+            <li key={prod.id_producto}>
+              {prod.nombre} — ${prod.precio.toFixed(2)} — Stock: {prod.stock}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
-
-
-
