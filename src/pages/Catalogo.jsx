@@ -8,7 +8,7 @@ export default function Catalogo() {
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        const res = await apiGet("/");
+        const res = await apiGet("/api/catalogo");
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const data = await res.json();
         setProductos(data);
@@ -42,3 +42,4 @@ export default function Catalogo() {
     </div>
   );
 }
+
