@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiGet } from "../services/api";
 
 export default function Catalogo() {
   const [productos, setProductos] = useState([]);
@@ -42,5 +43,6 @@ export default function Catalogo() {
     </div>
   );
 }
+
 
 
