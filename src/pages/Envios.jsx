@@ -1,4 +1,4 @@
-simport React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { apiGet } from "../services/api"; // tu helper para fetch/axios
 
 export default function Envios() {
@@ -56,6 +56,7 @@ export default function Envios() {
     </div>
   );
 }
+
 
 
 
