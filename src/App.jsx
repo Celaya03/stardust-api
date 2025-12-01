@@ -11,7 +11,7 @@ export default function App() {
     <>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Catalogo />} />
+        <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/disponibilidad" element={<Disponibilidad />} />
         <Route path="/venta" element={<Venta />} />
         <Route path="/envios" element={<Envios />} />
@@ -20,4 +20,5 @@ export default function App() {
     </>
   );
 }
+
 
