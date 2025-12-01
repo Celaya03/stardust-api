@@ -9,7 +9,7 @@ export default function Envios() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await apiGet("api/envios/procesar-pago");
+        const data = await apiGet("/api/envios/procesar-pago");
         setTransacciones(data);
       } catch (err) {
         console.error("Error al obtener transacciones:", err);
@@ -56,6 +56,7 @@ export default function Envios() {
     </div>
   );
 }
+
 
 
 
