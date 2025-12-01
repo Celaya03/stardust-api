@@ -9,7 +9,7 @@ export default function Transacciones() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await apiGet("/procesar-pago");  // o la ruta correcta de tu backend
+        const data = await apiGet("api/envios/procesar-pago");  // o la ruta correcta de tu backend
         setTransacciones(data);
       } catch (err) {
         console.error("Error al obtener transacciones:", err);
@@ -64,3 +64,4 @@ export default function Transacciones() {
     </div>
   );
 }
+
