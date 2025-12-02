@@ -9,15 +9,12 @@ export default function Catalogo() {
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        const data = await apiGet("/api/catalogo/");  // tu ruta
-        // suponiendo que data tiene { store_id, productos: [...] }
-        if (!data.productos) {
-          throw new Error("Respuesta inválida del servidor");
-        }
-        setProductos(data.productos);
+        const data = await apiGet("/api/catalogo/");
+        // Supone que data.productos existe
+        setProductos(data.productos || []);
       } catch (err) {
-        console.error("Error al obtener productos:", err);
-        setError(err.message || "Error al cargar");
+        console.error(err);
+        setError("Error al cargar productos");
       } finally {
         setLoading(false);
       }
@@ -35,11 +32,15 @@ export default function Catalogo() {
         <p>No hay productos disponibles.</p>
       ) : (
         <ul>
-          {productos.map((prod) => (
-            <li key={prod.id_producto}>
-              {prod.nombre} — ${prod.precio.toFixed(2)} — Stock: {prod.stock}
-            </li>
-          ))}
+          {productos.map((prod) => {
+            const precio = Number(prod.precio);
+            return (
+              <li key={prod.id_producto}>
+                {prod.nombre} — $
+                {isNaN(precio) ? prod.precio : precio.toFixed(2)}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
