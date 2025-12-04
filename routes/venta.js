@@ -17,11 +17,7 @@ router.post('/producto', async (req, res) => {
   } = req.body;
 
   try {
-await pool.query(
-  `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status)
-   VALUES ($1,$2,$3,$4,$5,$6)`,
-  [order_id, 3, product_external_id, price, quantity, payment_status]
-);
+
 
 
     // 2. Reducir stock del producto 👇
