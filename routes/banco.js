@@ -11,6 +11,11 @@ router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
   try {
+      // ✅ Validación de datos antes de procesar
+    if (!req.body.numero || !req.body.nombre || !req.body.mes_exp || 
+        !req.body.anio_exp || !req.body.cvv || !req.body.monto) {
+      return res.status(400).json({ error: "Datos incompletos para procesar el pago" });
+    }
     // Construir datos de pago con cuenta destino fija
     const datosPago = {
       NumeroTarjetaOrigen: req.body.numero,   // tarjeta del cliente
