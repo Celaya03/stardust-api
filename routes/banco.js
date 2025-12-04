@@ -4,30 +4,29 @@ const router = express.Router();
 const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
 
-// Procesar pago y registrar transacción
+// Cuenta destino fija de tu negocio
+const CUENTA_DESTINO = "8181818181818181"; // cámbiala por la tuya real
+
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
 
-    try {
-        //Usa los datos enviados desde Postman
-        const datosPago = req.body;
+  try {
+    // Construir datos de pago con cuenta destino fija
+    const datosPago = {
+      NumeroTarjetaOrigen: req.body.numero,   // tarjeta del cliente
+      NumeroTarjetaDestino: CUENTA_DESTINO,   // siempre tu cuenta destino
+      NombreCliente: req.body.nombre,
+      MesExp: req.body.mes_exp,
+      AnioExp: req.body.anio_exp,
+      Cvv: req.body.cvv,
+      Monto: req.body.cantidad
+    };
 
-        // Datos fijos de prueba
-        //const datosPago = {
-        //  NumeroTarjetaOrigen: "3131313131313131",
-        //  NumeroTarjetaDestino: "8181818181818181",
-        //  NombreCliente: "Ernesto Ibarra",
-        //  MesExp: 12,
-        //  AnioExp: 2028,
-        //  Cvv: "123",
-        //  Monto: 150.25
-        //};
-
-        // Enviar al API del banco
-        const respuestaBanco = await axios.post(
-          'https://bancarata.vercel.app/api/bank',
-          datosPago,
-          { headers: { 'Content-Type': 'application/json' } }
+    // Enviar al API del banco
+    const respuestaBanco = await axios.post(
+      'https://bancarata.vercel.app/api/bank',
+      datosPago,
+      { headers: { 'Content-Type': 'application/json' } }
     );
 
     const trx = respuestaBanco.data;
@@ -36,8 +35,7 @@ router.post('/procesar-pago', async (req, res) => {
     const insertSQL = `
       INSERT INTO transacciones_banco (
         CreadaUTC, IdTransaccion, TipoTransaccion, MontoTransaccion,
-        NumeroTarjeta, 
-        NombreEstado, Firma, Descripcion
+        NumeroTarjeta, NombreEstado, Firma, Descripcion
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *;
@@ -48,7 +46,7 @@ router.post('/procesar-pago', async (req, res) => {
       trx.IdTransaccion,
       trx.TipoTransaccion,
       trx.MontoTransaccion,
-      trx.NumeroTarjeta,
+      datosPago.NumeroTarjetaOrigen, // guardas la tarjeta del cliente
       trx.NombreEstado,
       trx.Firma,
       trx.Descripcion
@@ -56,7 +54,6 @@ router.post('/procesar-pago', async (req, res) => {
 
     const result = await pool.query(insertSQL, values);
 
-    // Respuesta al cliente
     return res.status(200).json({
       mensaje: 'Pago procesado y registrado',
       transaccion: result.rows[0],
@@ -64,22 +61,10 @@ router.post('/procesar-pago', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error procesando pago:', error);
+    console.error('❌ Error procesando pago:', error.message);
     return res.status(500).json({ error: 'Error interno procesando el pago.' });
   }
 });
-
-//  GET /api/transacciones_banco
-router.get('/transacciones_banco', async (req, res) => {
-    try {
-        const result = await pool.query("SELECT * FROM transacciones_banco ORDER BY id ASC");
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: "Error consultando transacciones" });
-    }
-});
-
-module.exports = router;
 
 
 
