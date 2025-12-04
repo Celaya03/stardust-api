@@ -5,7 +5,16 @@ const pool = require('../db');
 const axios = require('axios');
 
 router.post('/ventas/producto', async (req, res) => {
-  const { order_id, product_external_id, price, quantity, total, payment_status } = req.body;
+  const {
+    order_id,
+    product_external_id,
+    price,
+    quantity,
+    total,
+    payment_status,
+    cliente,
+    producto
+  } = req.body;
 
   try {
     // 1. Registrar venta en tu BD
@@ -18,28 +27,28 @@ router.post('/ventas/producto', async (req, res) => {
     // 2. Preparar body para el servicio de envíos
     const datosEnvio = {
       id_orden_externa: order_id,
-      id_orden_original: `P-${order_id}`, // puedes usar tu propio formato
+      id_orden_original: `P-${order_id}`,
       servicio_origen: "Cafetería Stardust",
       webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
       datos_cliente: {
-        nombre: "Pancho Bigoton", // aquí deberías usar los datos reales del cliente
-        direccion: "Mendoza 34",
-        telefono: "5556790",
-        email: "Bigoton@ejemplo.com"
+        nombre: cliente.nombre,
+        direccion: cliente.direccion,
+        telefono: cliente.telefono,
+        email: cliente.email
       },
       productos: [
         {
-          sku: product_external_id,
-          nombre: "Latte", // o el nombre real del producto
-          cantidad: quantity,
-          precio_unitario: price
+          sku: producto.sku,
+          nombre: producto.nombre,
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precio_unitario
         }
       ]
     };
 
     // 3. Hacer POST al servicio de envíos externo
     const respuestaEnvios = await axios.post(
-      "https://gestion-envios-sz3x.onrender.com/ordenes", // 👈 aquí va la URL real
+      "https://gestion-envios-sz3x.onrender.com/ordenes",
       datosEnvio,
       { headers: { "Content-Type": "application/json" } }
     );
@@ -66,11 +75,10 @@ router.post('/ventas/producto', async (req, res) => {
   }
 });
 
-
 router.get('/ventas', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, payment_status, created_at
+      `SELECT id_orden, id_producto, precio_unitario, cantidad, total, estado_pago, created_at
        FROM ventas
        ORDER BY created_at DESC`
     );
