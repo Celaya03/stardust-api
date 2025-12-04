@@ -26,5 +26,18 @@ router.post('/producto', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get('/ventas', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT order_id, store_id, product_external_id, price, quantity, payment_status, created_at
+       FROM ventas
+       ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("❌ Error al consultar ventas:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;
