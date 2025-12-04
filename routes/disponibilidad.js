@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // conexión a PostgreSQL
 
-// Verificar disponibilidad con POST (recibe parámetros en body)
 router.post('/verificar', async (req, res) => {
   const { id_producto, cantidad_solicitada } = req.body;
 
@@ -12,23 +11,25 @@ router.post('/verificar', async (req, res) => {
   }
 
   try {
-    // 👇 Ahora consultamos directamente la tabla productos
     const result = await pool.query(
-      'SELECT stock FROM productos WHERE store_id = $1 AND id_producto = $2',
-      [3, id_producto] // store_id fijo en tu sistema
+      'SELECT stock, precio, nombre FROM productos WHERE store_id = $1 AND id_producto = $2',
+      [3, id_producto]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Producto no encontrado en esta tienda" });
+      return res.status(404).json({ disponible: false, error: "Producto no encontrado en esta tienda" });
     }
 
-    const stock = result.rows[0].stock;
+    const producto = result.rows[0];
+    const disponible = producto.stock >= cantidad_solicitada;
 
-    // 👉 Solo devolvemos lo que pediste
     res.json({
       id_producto,
-      stock,
-      cantidad_solicitada
+      nombre: producto.nombre,
+      precio: producto.precio,
+      stock: producto.stock,
+      cantidad_solicitada,
+      disponible
     });
   } catch (error) {
     console.error("❌ Error al verificar disponibilidad:", error.message);
@@ -37,4 +38,5 @@ router.post('/verificar', async (req, res) => {
 });
 
 module.exports = router;
+
 
