@@ -5,7 +5,7 @@ const axios = require('axios');
 const pool = require('../db'); // conexión central a PostgreSQL
 
 // Cuenta destino fija de tu negocio
-const CUENTA_DESTINO = "8181818181818181"; // cámbiala por la tuya real
+const CUENTA_DESTINO = "4111111111111114"; // cámbiala por la tuya real
 
 router.post('/procesar-pago', async (req, res) => {
   console.log('📨 Solicitud recibida en /procesar-pago:', new Date().toISOString());
