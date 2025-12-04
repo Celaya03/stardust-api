@@ -27,16 +27,10 @@ app.get('/health', (req, res) => {
 });
 
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'Stardust Cafetería API' });
-});
 
 //banco
 const bancoRoutes = require('./routes/banco');
 app.use('/api/banco', bancoRoutes);
-
-
 
 
 // Envíos (webhook y movimientos)
