@@ -13,6 +13,12 @@ router.get('/', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "No hay productos en esta tienda" });
     }
+       const productosConCamposNulos = result.rows.map((producto) => ({
+      ...producto,
+      talla: null,
+      color: null,
+      duracion_minutos: null
+    }));
 
     res.json({
       store_id: 3,
