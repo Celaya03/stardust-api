@@ -17,8 +17,7 @@ router.post('/producto', async (req, res) => {
   } = req.body;
 
   try {
-    // 1. Registrar venta en tu BD
-    await pool.query(
+await pool.query(
   `INSERT INTO ventas (order_id, product_external_id, price, quantity, total, payment_status)
    VALUES ($1,$2,$3,$4,$5,$6)`,
   [order_id, product_external_id, price, quantity, total, payment_status]
@@ -80,7 +79,7 @@ router.post('/producto', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
+      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at,total
        FROM ventas
        ORDER BY created_at DESC`
     );
