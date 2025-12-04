@@ -75,7 +75,7 @@ router.post('/producto', async (req, res) => {
   }
 });
 
-router.get('/ventas', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id_orden, id_producto, precio_unitario, cantidad, total, estado_pago, created_at
