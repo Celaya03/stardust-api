@@ -4,7 +4,7 @@ const router = express.Router();
 const pool = require('../db');
 const axios = require('axios');
 
-router.post('/ventas/producto', async (req, res) => {
+router.post('/producto', async (req, res) => {
   const {
     order_id,
     product_external_id,
