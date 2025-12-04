@@ -28,27 +28,18 @@ router.post('/webhook-envios', async (req, res) => {
   }
 });
 
-// Consultar envío por código de seguimiento
 router.get('/envios/:codigo', async (req, res) => {
   const { codigo } = req.params;
-
   try {
     const { rows } = await pool.query(
-      `SELECT id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion
-       FROM edo_env
-       WHERE codigo_seguimiento = $1
-       ORDER BY fecha_actualizacion DESC
-       LIMIT 1`,
+      'SELECT * FROM edo_env WHERE codigo_seguimiento = $1 ORDER BY fecha_actualizacion DESC LIMIT 1',
       [codigo]
     );
-
     if (rows.length === 0) {
       return res.status(404).json({ error: 'No se encontró el envío' });
     }
-
     res.json(rows[0]);
   } catch (error) {
-    console.error("❌ Error al consultar envío:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
