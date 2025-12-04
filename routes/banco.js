@@ -19,7 +19,7 @@ router.post('/procesar-pago', async (req, res) => {
       MesExp: req.body.mes_exp,
       AnioExp: req.body.anio_exp,
       Cvv: req.body.cvv,
-      Monto: req.body.cantidad
+      Monto: req.body.monto
     };
 
     // Enviar al API del banco
