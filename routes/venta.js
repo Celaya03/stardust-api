@@ -19,10 +19,12 @@ router.post('/producto', async (req, res) => {
   try {
     // 1. Registrar venta en tu BD
     await pool.query(
-      `INSERT INTO ventas (order_id, id_producto, precio_unitario, cantidad, total, estado_pago)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [order_id, product_external_id, price, quantity, total, payment_status]
-    );
+  `INSERT INTO ventas (order_id, product_external_id, price, quantity, total, payment_status)
+   VALUES ($1,$2,$3,$4,$5,$6)`,
+  [order_id, product_external_id, price, quantity, total, payment_status]
+);
+
+  
 
     // 2. Preparar body para el servicio de envíos
     const datosEnvio = {
@@ -78,7 +80,7 @@ router.post('/producto', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, id_producto, precio_unitario, cantidad, total, estado_pago, created_at
+      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
        FROM ventas
        ORDER BY created_at DESC`
     );
@@ -88,5 +90,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 module.exports = router;
