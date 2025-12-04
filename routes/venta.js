@@ -24,6 +24,14 @@ await pool.query(
 );
 
 
+    // 2. Reducir stock del producto 👇
+    await pool.query(
+      `UPDATE productos
+       SET stock = stock - $1
+       WHERE id_producto = $2 AND store_id = $3`,
+      [quantity, product_external_id, 3]
+    );
+
   
 
     // 2. Preparar body para el servicio de envíos
