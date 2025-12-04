@@ -66,6 +66,7 @@ router.post('/procesar-pago', async (req, res) => {
   }
 });
 
+module.exports = router;
 
 
 
