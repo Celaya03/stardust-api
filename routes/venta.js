@@ -12,7 +12,7 @@ router.post('/producto', async (req, res) => {
     const values = [];
     const placeholders = productos.map((p, i) => {
       const baseIndex = i * 6;
-      values.push(order_id, 3, p.product_external_id, p.precio_unitario, p.cantidad, payment_status);
+      values.push(order_id, 3, p.product_external_id, p.price, p.quantity, payment_status);
       return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`;
     }).join(",");
 
