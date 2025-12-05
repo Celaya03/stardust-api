@@ -4,17 +4,39 @@ const router = express.Router();
 const pool = require('../db');
 const axios = require('axios');
 
+// 👉 Función para generar order_id consecutivo
+async function generarOrderId() {
+  const result = await pool.query(
+    `SELECT order_id 
+     FROM ventas 
+     WHERE store_id = $1 
+     ORDER BY created_at DESC 
+     LIMIT 1`,
+    [3]
+  );
+
+  let nuevoNumero = 1;
+  if (result.rows.length > 0) {
+    const ultimoOrderId = result.rows[0].order_id; // ej. "ORD005"
+    const numero = parseInt(ultimoOrderId.replace("ORD", ""), 10);
+    nuevoNumero = numero + 1;
+  }
+
+  return `ORD${String(nuevoNumero).padStart(3, "0")}`;
+}
+
 router.post('/venta-interna', async (req, res) => {
   const { product_external_id, price, quantity, cliente, producto } = req.body;
-  
 
   try {
-     const order_id = await generarOrderId();
-    // 1. Insertar venta con el order_id recibido y payment_status = pendiente
+    const order_id = await generarOrderId();
+    const total = price * quantity;
+
+    // 1. Insertar venta con order_id y payment_status pendiente
     await pool.query(
-      `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [order_id, 3, product_external_id, price, quantity, "pendiente"]
+      `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, total, tipo_venta, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [order_id, 3, product_external_id, price, quantity, total, "interna", "pendiente"]
     );
 
     // 2. Reducir stock
@@ -29,20 +51,8 @@ router.post('/venta-interna', async (req, res) => {
       id_orden_original: `P-${order_id}`,
       servicio_origen: "Cafetería Stardust",
       webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
-      datos_cliente: {
-        nombre: cliente.nombre,
-        direccion: cliente.direccion,
-        telefono: cliente.telefono,
-        email: cliente.email
-      },
-      productos: [
-        {
-          sku: producto.sku,
-          nombre: producto.nombre,
-          cantidad: producto.cantidad,
-          precio_unitario: producto.precio_unitario
-        }
-      ]
+      datos_cliente: cliente,
+      productos: [producto]
     };
 
     // 4. POST al servicio de envíos externo
@@ -69,10 +79,11 @@ router.post('/venta-interna', async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error registrando venta/envío:", err.message);
+    console.error("❌ Error registrando venta/envío:", err);
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
+
 // Obtener todas las ventas
 router.get('/ventas', async (req, res) => {
   try {
@@ -89,5 +100,5 @@ router.get('/ventas', async (req, res) => {
   }
 });
 
-
 module.exports = router;
+
