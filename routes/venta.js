@@ -5,7 +5,7 @@ const pool = require('../db');
 const axios = require('axios');
 
 router.post('/venta-interna', async (req, res) => {
-  const { order_id, product_external_id, price, quantity, cliente, producto } = req.body;
+  const { product_external_id, price, quantity, cliente, producto } = req.body;
   
 
   try {
