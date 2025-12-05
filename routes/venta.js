@@ -36,8 +36,8 @@ router.post('/venta-interna', async (req, res) => {
 
     // 2. Insertar venta con payment_status = pendiente
     await pool.query(
-      `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status,total)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
       [order_id, 3, product_external_id, price, quantity, "pendiente"]
     );
 
