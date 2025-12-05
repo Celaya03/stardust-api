@@ -6,8 +6,10 @@ const axios = require('axios');
 
 router.post('/venta-interna', async (req, res) => {
   const { order_id, product_external_id, price, quantity, cliente, producto } = req.body;
+  
 
   try {
+     const order_id = await generarOrderId();
     // 1. Insertar venta con el order_id recibido y payment_status = pendiente
     await pool.query(
       `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status)
