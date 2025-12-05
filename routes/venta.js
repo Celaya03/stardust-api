@@ -71,5 +71,21 @@ router.post('/venta-interna', async (req, res) => {
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
+// Obtener todas las ventas
+router.get('/ventas', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, order_id, store_id, product_external_id, price, quantity, total, tipo_venta, payment_status, created_at
+       FROM ventas
+       ORDER BY created_at DESC`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("❌ Error obteniendo ventas:", error.message);
+    res.status(500).json({ error: "Error obteniendo ventas" });
+  }
+});
+
 
 module.exports = router;
