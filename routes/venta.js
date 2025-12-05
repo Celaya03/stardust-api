@@ -66,3 +66,4 @@ router.post('/producto', async (req, res) => {
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
+module.exports = router;
