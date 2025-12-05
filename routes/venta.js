@@ -5,57 +5,42 @@ const pool = require('../db');
 const axios = require('axios');
 
 router.post('/producto', async (req, res) => {
-  const {
-    order_id,
-    product_external_id,
-    price,
-    quantity,
-    payment_status,
-    cliente,
-    producto
-  } = req.body;
+  const { order_id, payment_status, cliente, productos } = req.body;
 
   try {
-await pool.query(
-  `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status)
-   VALUES ($1,$2,$3,$4,$5,$6)`,
-  [order_id, 3, product_external_id, price, quantity, payment_status]
-);
+    // Construir placeholders dinámicos para multi-row insert
+    const values = [];
+    const placeholders = productos.map((p, i) => {
+      const baseIndex = i * 6;
+      values.push(order_id, 3, p.product_external_id, p.precio_unitario, p.cantidad, payment_status);
+      return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`;
+    }).join(",");
 
+    const query = `
+      INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, payment_status)
+      VALUES ${placeholders}
+    `;
 
-    // 2. Reducir stock del producto 👇
-    await pool.query(
-      `UPDATE productos
-       SET stock = stock - $1
-       WHERE id_producto = $2 AND store_id = $3`,
-      [quantity, product_external_id, 3]
-    );
+    await pool.query(query, values);
 
-  
+    // Reducir stock de cada producto
+    for (const p of productos) {
+      await pool.query(
+        `UPDATE productos SET stock = stock - $1 WHERE id_producto = $2 AND store_id = $3`,
+        [p.cantidad, p.product_external_id, 3]
+      );
+    }
 
-    // 2. Preparar body para el servicio de envíos
+    // Preparar body para el servicio de envíos
     const datosEnvio = {
       id_orden_externa: order_id,
       id_orden_original: `P-${order_id}`,
       servicio_origen: "Cafetería Stardust",
       webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
-      datos_cliente: {
-        nombre: cliente.nombre,
-        direccion: cliente.direccion,
-        telefono: cliente.telefono,
-        email: cliente.email
-      },
-      productos: [
-        {
-          sku: producto.sku,
-          nombre: producto.nombre,
-          cantidad: producto.cantidad,
-          precio_unitario: producto.precio_unitario
-        }
-      ]
+      datos_cliente: cliente,
+      productos // 👈 se manda el arreglo completo
     };
 
-    // 3. Hacer POST al servicio de envíos externo
     const respuestaEnvios = await axios.post(
       "https://gestion-envios-sz3x.onrender.com/ordenes",
       datosEnvio,
@@ -64,14 +49,12 @@ await pool.query(
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
-    // 4. Guardar envío inicial en tu BD
     await pool.query(
       `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
        VALUES ($1,$2,$3,$4,NOW())`,
       [order_id, codigoSeguimiento, "pendiente", "almacén"]
     );
 
-    // 5. Responder al frontend con venta + envío
     res.json({
       mensaje: "Venta y envío registrados correctamente",
       order_id,
@@ -79,24 +62,7 @@ await pool.query(
     });
 
   } catch (err) {
-    console.error("❌ Error registrando venta/envío:", err.message);
+    console.error("❌ Error registrando venta/envío:", err);
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
-
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at,total
-       FROM ventas
-       ORDER BY created_at DESC`
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error("❌ Error al consultar ventas:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
-module.exports = router;
