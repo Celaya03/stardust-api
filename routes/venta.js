@@ -10,7 +10,6 @@ router.post('/producto', async (req, res) => {
     product_external_id,
     price,
     quantity,
-    total,
     payment_status,
     cliente,
     producto
