@@ -19,7 +19,7 @@ router.post('/producto', async (req, res) => {
       await pool.query(
         `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, size, color, payment_status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [order_id, 3, p.external_id, price, p.quantity, p.size||null, p.color||null, payment_status]
+        [order_id, 3, p.id_producto, price, p.quantity, p.size||null, p.color||null, payment_status]
       );
 
       await pool.query(
