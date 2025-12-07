@@ -119,25 +119,11 @@ router.post('/producto', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-   const result = await pool.query(
-  `SELECT 
-     order_id,
-     json_agg(
-       json_build_object(
-         'product_external_id', product_external_id,
-         'quantity', quantity,
-         'price', price,
-         'size', size,
-         'color', color
-       )
-     ) AS productos,
-     payment_status,
-     MAX(created_at) AS fecha
-   FROM ventas
-   GROUP BY order_id, payment_status
-   ORDER BY fecha DESC`
-);
-
+    const result = await pool.query(
+      `SELECT id,order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
+       FROM ventas
+       ORDER BY created_at DESC`
+    );
     res.json(result.rows);
   } catch (error) {
     console.error("❌ Error al consultar ventas:", error.message);
