@@ -16,44 +16,44 @@ router.post('/producto', async (req, res) => {
   try {
     // 1. Insertar cada producto en ventas y actualizar stock
     for (const p of products) {
-  // 1. Buscar el id_producto real a partir del external_id
-  const result = await pool.query(
-    `SELECT id_producto 
-     FROM productos 
-     WHERE id_producto = $1 AND store_id = $2`,
-    [p.external_id, 3]
-  );
+      const productId = p.product_external_id; // 👈 viene del body
 
-  if (result.rows.length === 0) {
-    throw new Error(`Producto con external_id ${p.external_id} no encontrado`);
-  }
+      // Validar que exista en productos
+      const result = await pool.query(
+        `SELECT id_producto 
+         FROM productos 
+         WHERE id_producto = $1 AND store_id = $2`,
+        [productId, 3]
+      );
 
-  const idProducto = result.rows[0].id_producto;
+      if (result.rows.length === 0) {
+        throw new Error(`Producto con id_producto ${productId} no encontrado`);
+      }
 
-  // 2. Insertar en ventas
-  await pool.query(
-    `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, size, color, payment_status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-    [
-      order_id,
-      3,
-      idProducto,        // 👈 ahora siempre válido
-      price,
-      p.quantity,
-      p.size || null,
-      p.color || null,
-      payment_status
-    ]
-  );
+      // Insertar en ventas
+      await pool.query(
+        `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, size, color, payment_status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          order_id,
+          3,
+          productId,
+          price,
+          p.quantity,
+          p.size || null,
+          p.color || null,
+          payment_status
+        ]
+      );
 
-  // 3. Actualizar stock
-  await pool.query(
-    `UPDATE productos
-     SET stock = stock - $1
-     WHERE id_producto = $2 AND store_id = $3`,
-    [p.quantity, idProducto, 3]
-  );
-}
+      // Actualizar stock
+      await pool.query(
+        `UPDATE productos
+         SET stock = stock - $1
+         WHERE id_producto = $2 AND store_id = $3`,
+        [p.quantity, productId, 3]
+      );
+    }
 
     // 2. Preparar body para el servicio de envíos con todos los productos
     const datosEnvio = {
@@ -68,7 +68,7 @@ router.post('/producto', async (req, res) => {
         email: datos_cliente.email
       },
       productos: products.map(p => ({
-        sku: p.external_id,            // o tu campo real de SKU
+        sku: p.product_external_id,   // 👈 usa el mismo campo
         nombre: p.nombre || "Producto",
         cantidad: p.quantity,
         precio_unitario: p.precio_unitario || price
@@ -99,7 +99,7 @@ router.post('/producto', async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error registrando venta/envío:", err.message);
+    console.error("❌ Error registrando venta/envío:", err);
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
