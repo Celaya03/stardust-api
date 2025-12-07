@@ -6,21 +6,29 @@ const axios = require('axios');
 
 router.post('/producto', async (req, res) => {
   const {
-    order_id,
+    order_id: externalOrderId, // puede venir del mall
     price,
-    products,       
+    products,
     datos_cliente,
     payment_status
   } = req.body;
 
   try {
-     // 1. Generar automáticamente el order_id con formato ORD-XXX
-    const resultSeq = await pool.query("SELECT nextval('orden_seq') AS numero");
-    const numero = resultSeq.rows[0].numero;
-    const order_id = `ORD-${String(numero).padStart(3, '0')}`; // ej. ORD-001
-    // 1. Insertar cada producto en ventas y actualizar stock
+    let order_id;
+
+    if (externalOrderId) {
+      // Caso 2: venta externa → conservar el ID que viene
+      order_id = externalOrderId;
+    } else {
+      // Caso 1: compra interna → generar automáticamente
+      const resultSeq = await pool.query("SELECT nextval('orden_seq') AS numero");
+      const numero = resultSeq.rows[0].numero;
+      order_id = `ORD-${String(numero).padStart(3, '0')}`;
+    }
+
+    // Insertar cada producto en ventas y actualizar stock
     for (const p of products) {
-      const productId = p.product_external_id; // 👈 viene del body
+      const productId = p.product_external_id;
 
       // Validar que exista en productos
       const result = await pool.query(
@@ -59,27 +67,22 @@ router.post('/producto', async (req, res) => {
       );
     }
 
-    // 2. Preparar body para el servicio de envíos con todos los productos
+    // Preparar body para el servicio de envíos
     const datosEnvio = {
       id_orden_externa: order_id,
       id_orden_original: `P-${order_id}`,
       servicio_origen: "Cafetería Stardust",
       webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
-      datos_cliente: {
-        nombre: datos_cliente.nombre,
-        direccion: datos_cliente.direccion,
-        telefono: datos_cliente.telefono,
-        email: datos_cliente.email
-      },
+      datos_cliente,
       productos: products.map(p => ({
-        sku: p.product_external_id,   // 👈 usa el mismo campo
+        sku: p.product_external_id,
         nombre: p.nombre || "Producto",
         cantidad: p.quantity,
         precio_unitario: p.precio_unitario || price
       }))
     };
 
-    // 3. POST al servicio de envíos externo
+    // POST al servicio de envíos externo
     const respuestaEnvios = await axios.post(
       "https://gestion-envios-sz3x.onrender.com/ordenes",
       datosEnvio,
@@ -88,14 +91,19 @@ router.post('/producto', async (req, res) => {
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
-    // 4. Guardar envío inicial en tu BD
+    // Guardar envío inicial en tu BD
     await pool.query(
-      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
-       VALUES ($1,$2,$3,$4,NOW())`,
+      `INSERT INTO edo_env (order_id, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
+       VALUES ($1,$2,$3,$4,NOW())
+       ON CONFLICT (order_id) DO UPDATE
+         SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
+             estado_actual = EXCLUDED.estado_actual,
+             ubicacion_actual = EXCLUDED.ubicacion_actual,
+             fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
       [order_id, codigoSeguimiento, "pendiente", "almacén"]
     );
 
-    // 5. Responder al frontend
+    // Responder al frontend
     res.json({
       mensaje: "Venta y envío registrados correctamente",
       order_id,
@@ -111,7 +119,7 @@ router.post('/producto', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at,total
+      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
        FROM ventas
        ORDER BY created_at DESC`
     );
@@ -123,3 +131,4 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
