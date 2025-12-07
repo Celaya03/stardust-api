@@ -16,19 +16,44 @@ router.post('/producto', async (req, res) => {
   try {
     // 1. Insertar cada producto en ventas y actualizar stock
     for (const p of products) {
-      await pool.query(
-        `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, size, color, payment_status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [order_id, 3, p.id_producto, price, p.quantity, p.size||null, p.color||null, payment_status]
-      );
+  // 1. Buscar el id_producto real a partir del external_id
+  const result = await pool.query(
+    `SELECT id_producto 
+     FROM productos 
+     WHERE id_producto = $1 AND store_id = $2`,
+    [p.external_id, 3]
+  );
 
-      await pool.query(
-        `UPDATE productos
-         SET stock = stock - $1
-         WHERE id_producto = $2 AND store_id = $3`,
-        [p.quantity, p.external_id, 3]
-      );
-    }
+  if (result.rows.length === 0) {
+    throw new Error(`Producto con external_id ${p.external_id} no encontrado`);
+  }
+
+  const idProducto = result.rows[0].id_producto;
+
+  // 2. Insertar en ventas
+  await pool.query(
+    `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, size, color, payment_status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [
+      order_id,
+      3,
+      idProducto,        // 👈 ahora siempre válido
+      price,
+      p.quantity,
+      p.size || null,
+      p.color || null,
+      payment_status
+    ]
+  );
+
+  // 3. Actualizar stock
+  await pool.query(
+    `UPDATE productos
+     SET stock = stock - $1
+     WHERE id_producto = $2 AND store_id = $3`,
+    [p.quantity, idProducto, 3]
+  );
+}
 
     // 2. Preparar body para el servicio de envíos con todos los productos
     const datosEnvio = {
