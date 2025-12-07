@@ -8,7 +8,7 @@ router.post('/producto', async (req, res) => {
   const {
     order_id,
     price,
-    products,       // ahora es un array
+    products,       
     datos_cliente,
     payment_status
   } = req.body;
