@@ -120,7 +120,7 @@ router.post('/producto', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
+      `SELECT id,order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
        FROM ventas
        ORDER BY created_at DESC`
     );
