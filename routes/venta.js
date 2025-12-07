@@ -14,6 +14,10 @@ router.post('/producto', async (req, res) => {
   } = req.body;
 
   try {
+     // 1. Generar automáticamente el order_id con formato ORD-XXX
+    const resultSeq = await pool.query("SELECT nextval('orden_seq') AS numero");
+    const numero = resultSeq.rows[0].numero;
+    const order_id = `ORD-${String(numero).padStart(3, '0')}`; // ej. ORD-001
     // 1. Insertar cada producto en ventas y actualizar stock
     for (const p of products) {
       const productId = p.product_external_id; // 👈 viene del body
