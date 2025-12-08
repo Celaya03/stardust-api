@@ -26,9 +26,14 @@ router.post('/producto', async (req, res) => {
     const productosFinal = [];
 
     // Validar y actualizar stock
-    for (const p of products) {
-      // 👇 leer external1-id del body
-      const id_producto = p["external_id"];
+ for (const p of products) {
+  const id_producto = String(
+    p["external1-id"] || p.external1_id || p.externalId || p.product_external_id
+  );
+
+  if (!id_producto) {
+    throw new Error("Producto sin identificador externo válido");
+  }
 
       // Validar existencia en productos usando id_producto
       const result = await pool.query(
