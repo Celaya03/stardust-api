@@ -1,11 +1,11 @@
 const express = require('express');
-const router = express.Router();   // 👈 esto falta en tu archivo
+const router = express.Router();
 const pool = require('../db');
 const axios = require('axios');
 
 router.post('/producto', async (req, res) => {
   const {
-    order_id: externalOrderId,
+    order_id: externalOrderId, // puede venir del mall
     price,
     products,
     payment_status
@@ -15,8 +15,10 @@ router.post('/producto', async (req, res) => {
     let order_id;
 
     if (externalOrderId) {
+      // Caso 2: venta externa → conservar el ID que viene
       order_id = externalOrderId;
     } else {
+      // Caso 1: compra interna → generar automáticamente
       const resultSeq = await pool.query("SELECT nextval('orden_seq') AS numero");
       const numero = resultSeq.rows[0].numero;
       order_id = `ORD-${String(numero).padStart(3, '0')}`;
@@ -26,7 +28,7 @@ router.post('/producto', async (req, res) => {
 
     // Validar y actualizar stock
     for (const p of products) {
-      // Buscar el id_producto interno a partir del product_external_id
+      // Buscar id_producto interno a partir del product_external_id
       const result = await pool.query(
         `SELECT id_producto 
          FROM productos 
@@ -71,7 +73,7 @@ router.post('/producto', async (req, res) => {
       ]
     );
 
-    // Preparar body para envíos (usa product_external_id)
+    // Preparar body para el servicio de envíos (usa product_external_id)
     const datosEnvio = {
       id_orden_externa: order_id,
       id_orden_original: `P-${order_id}`,
@@ -93,6 +95,7 @@ router.post('/producto', async (req, res) => {
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
+    // Guardar envío inicial en tu BD
     await pool.query(
       `INSERT INTO edo_env (order_id, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
        VALUES ($1,$2,$3,$4,NOW())
@@ -104,6 +107,7 @@ router.post('/producto', async (req, res) => {
       [order_id, codigoSeguimiento, "pendiente", "almacén"]
     );
 
+    // Responder al frontend
     res.json({
       mensaje: "Venta y envío registrados correctamente",
       order_id,
@@ -138,5 +142,6 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
