@@ -28,7 +28,7 @@ router.post('/producto', async (req, res) => {
     // Validar y actualizar stock
  for (const p of products) {
   const id_producto = String(
-    p["external_id"] || p.external_id || p.external_id || p.product_external_id
+    p["external_id"] || p.external_id || p.product_external_id
   );
 
   if (!id_producto) {
