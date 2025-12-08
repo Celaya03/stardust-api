@@ -6,10 +6,9 @@ const axios = require('axios');
 router.post('/producto', async (req, res) => {
   const {
     order_id: externalOrderId,
-    price,
     products,
     payment_status,
-    cliente   // 👈 aquí recibimos el objeto cliente del body
+    cliente   // 👈 objeto cliente del body
   } = req.body;
 
   try {
@@ -29,7 +28,7 @@ router.post('/producto', async (req, res) => {
     for (const p of products) {
       const id_producto = p.product_external_id;
 
-      // Validar existencia en productos usando id_producto
+      // Validar existencia en productos
       const result = await pool.query(
         `SELECT id_producto 
          FROM productos 
@@ -49,7 +48,7 @@ router.post('/producto', async (req, res) => {
         [p.quantity, id_producto, 3]
       );
 
-      // Guardar SOLO product_external_id (que es igual a id_producto)
+      // Guardar datos del producto
       productosFinal.push({
         product_external_id: id_producto,
         quantity: p.quantity,
@@ -58,7 +57,13 @@ router.post('/producto', async (req, res) => {
       });
     }
 
-    // Insertar la venta como UNA sola fila
+    // ✅ Calcular el precio total real
+    const totalPrice = productosFinal.reduce(
+      (acc, p) => acc + p.precio_unitario * p.quantity,
+      0
+    );
+
+    // Insertar la venta con el total calculado
     await pool.query(
       `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
        VALUES ($1,$2,$3,$4,$5)
@@ -70,13 +75,13 @@ router.post('/producto', async (req, res) => {
       [
         order_id,
         3,
-        price,
+        totalPrice, // 👈 ahora sí el total real
         JSON.stringify(productosFinal),
         payment_status
       ]
     );
 
-    // Preparar body para el servicio de envíos (usa product_external_id)
+    // Preparar body para el servicio de envíos
     const datosEnvio = {
       id_orden_externa: order_id,
       id_orden_original: `P-${order_id}`,
@@ -89,10 +94,10 @@ router.post('/producto', async (req, res) => {
         email: cliente?.email || "Sin email"
       },
       productos: productosFinal.map(p => ({
-        sku: p.product_external_id, // externo = interno
+        sku: p.product_external_id,
         nombre: p.nombre || "Producto",
         cantidad: p.quantity,
-        precio_unitario: p.precio_unitario || price
+        precio_unitario: p.precio_unitario
       }))
     };
 
@@ -104,22 +109,22 @@ router.post('/producto', async (req, res) => {
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
-   await pool.query(
-  `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
-   VALUES ($1,$2,$3,$4,NOW())
-   ON CONFLICT (id_orden_externa) DO UPDATE
-     SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
-         estado_actual = EXCLUDED.estado_actual,
-         ubicacion_actual = EXCLUDED.ubicacion_actual,
-         fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
-  [order_id, codigoSeguimiento, "pendiente", "almacén"]
-);
-
+    await pool.query(
+      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
+       VALUES ($1,$2,$3,$4,NOW())
+       ON CONFLICT (id_orden_externa) DO UPDATE
+         SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
+             estado_actual = EXCLUDED.estado_actual,
+             ubicacion_actual = EXCLUDED.ubicacion_actual,
+             fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
+      [order_id, codigoSeguimiento, "pendiente", "almacén"]
+    );
 
     res.json({
       mensaje: "Venta y envío registrados correctamente",
       order_id,
-      codigo_seguimiento: codigoSeguimiento
+      codigo_seguimiento: codigoSeguimiento,
+      total: totalPrice // 👈 opcional: devolver el total al frontend
     });
 
   } catch (err) {
@@ -132,30 +137,7 @@ router.post('/producto', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT order_id, store_id, price, productos, payment_status, created_at
-       FROM ventas
-       ORDER BY created_at DESC`
-    );
-
-    const ventas = result.rows.map(v => ({
-  ...v,
-  productos: v.productos // 👈 ya es objeto/array
-}));
-
-
-    res.json(ventas);
-  } catch (error) {
-    console.error("❌ Error al consultar ventas:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 module.exports = router;
-
-
 
 
 
