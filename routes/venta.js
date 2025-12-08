@@ -1,4 +1,3 @@
-// routes/ventas.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
@@ -9,7 +8,6 @@ router.post('/producto', async (req, res) => {
     order_id: externalOrderId, // puede venir del mall
     price,
     products,
-    datos_cliente,
     payment_status
   } = req.body;
 
@@ -26,46 +24,39 @@ router.post('/producto', async (req, res) => {
       order_id = `ORD-${String(numero).padStart(3, '0')}`;
     }
 
-    // Insertar cada producto en ventas y actualizar stock
+    // Validar y actualizar stock de cada producto
     for (const p of products) {
-      const productId = p.product_external_id;
-
-      // Validar que exista en productos
       const result = await pool.query(
         `SELECT id_producto 
          FROM productos 
          WHERE id_producto = $1 AND store_id = $2`,
-        [productId, 3]
+        [p.product_external_id, 3]
       );
 
       if (result.rows.length === 0) {
-        throw new Error(`Producto con id_producto ${productId} no encontrado`);
+        throw new Error(`Producto con id_producto ${p.product_external_id} no encontrado`);
       }
 
-      // Insertar en ventas
-      await pool.query(
-        `INSERT INTO ventas (order_id, store_id, product_external_id, price, quantity, size, color, payment_status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [
-          order_id,
-          3,
-          productId,
-          price,
-          p.quantity,
-          p.size || null,
-          p.color || null,
-          payment_status
-        ]
-      );
-
-      // Actualizar stock
       await pool.query(
         `UPDATE productos
          SET stock = stock - $1
          WHERE id_producto = $2 AND store_id = $3`,
-        [p.quantity, productId, 3]
+        [p.quantity, p.product_external_id, 3]
       );
     }
+
+    // Insertar la venta como UNA sola fila con lista de productos
+    await pool.query(
+      `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [
+        order_id,
+        3,
+        price,
+        JSON.stringify(products), // lista completa
+        payment_status
+      ]
+    );
 
     // Preparar body para el servicio de envíos
     const datosEnvio = {
@@ -73,7 +64,6 @@ router.post('/producto', async (req, res) => {
       id_orden_original: `P-${order_id}`,
       servicio_origen: "Cafetería Stardust",
       webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
-      datos_cliente,
       productos: products.map(p => ({
         sku: p.product_external_id,
         nombre: p.nombre || "Producto",
@@ -119,11 +109,18 @@ router.post('/producto', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
+      `SELECT order_id, store_id, price, productos, payment_status, created_at
        FROM ventas
        ORDER BY created_at DESC`
     );
-    res.json(result.rows);
+
+    // Parsear productos JSON para que el frontend reciba array
+    const ventas = result.rows.map(v => ({
+      ...v,
+      productos: JSON.parse(v.productos)
+    }));
+
+    res.json(ventas);
   } catch (error) {
     console.error("❌ Error al consultar ventas:", error.message);
     res.status(500).json({ error: error.message });
@@ -131,6 +128,5 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
-
 
 
