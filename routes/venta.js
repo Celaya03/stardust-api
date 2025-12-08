@@ -32,7 +32,7 @@ router.post('/producto', async (req, res) => {
         `SELECT id_producto 
          FROM productos 
          WHERE id_producto = $1 AND store_id = $2`,
-        [p.id_producto, 3]
+        [id_producto, 3]
       );
 
       if (result.rows.length === 0) {
@@ -44,7 +44,7 @@ router.post('/producto', async (req, res) => {
         `UPDATE productos
          SET stock = stock - $1
          WHERE id_producto = $2 AND store_id = $3`,
-        [p.quantity, p.id_producto, 3]
+        [p.quantity, id_producto, 3]
       );
 
       // Guardar SOLO product_external_id (que es igual a id_producto)
