@@ -59,22 +59,26 @@ router.post('/producto', async (req, res) => {
     }
 
     // Insertar la venta como UNA sola fila
-    await pool.query(
-      `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
-       VALUES ($1,$2,$3,$4,$5)
-       ON CONFLICT (order_id) DO UPDATE
-         SET price = EXCLUDED.price,
-             productos = EXCLUDED.productos,
-             payment_status = EXCLUDED.payment_status,
-             created_at = NOW()`,
-      [
-        order_id,
-        3,
-        price,
-        JSON.stringify(productosFinal),
-        payment_status
-      ]
-    );
+const insertVenta = await pool.query(
+  `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
+   VALUES ($1,$2,$3,$4,$5)
+   ON CONFLICT (order_id) DO UPDATE
+     SET price = EXCLUDED.price,
+         productos = EXCLUDED.productos,
+         payment_status = EXCLUDED.payment_status,
+         created_at = NOW()
+   RETURNING id`,
+  [order_id, 3, price, JSON.stringify(productosFinal), payment_status]
+);
+
+const id = insertVenta.rows[0].id_serial;
+
+res.json({
+  mensaje: "Venta y envío registrados correctamente",
+  order_id,
+  id, // 👈 ahora también lo mandas
+  codigo_seguimiento: codigoSeguimiento
+});
 
     // Preparar body para el servicio de envíos (usa product_external_id)
     const datosEnvio = {
