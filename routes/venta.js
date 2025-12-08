@@ -117,19 +117,45 @@ router.post('/producto', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+rrouter.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id,order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
+      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
        FROM ventas
        ORDER BY created_at DESC`
     );
-    res.json(result.rows);
+
+    // Agrupar por order_id
+    const agrupadas = {};
+    for (const row of result.rows) {
+      if (!agrupadas[row.order_id]) {
+        agrupadas[row.order_id] = {
+          order_id: row.order_id,
+          store_id: row.store_id,
+          payment_status: row.payment_status,
+          created_at: row.created_at,
+          productos: []
+        };
+      }
+
+      agrupadas[row.order_id].productos.push({
+        product_external_id: row.product_external_id,
+        price: row.price,
+        quantity: row.quantity,
+        size: row.size,
+        color: row.color
+      });
+    }
+
+    // Convertir a arreglo
+    const respuesta = Object.values(agrupadas);
+    res.json(respuesta);
   } catch (error) {
-    console.error("❌ Error al consultar ventas:", error.message);
+    console.error("❌ Error al consultar ventas agrupadas:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 module.exports = router;
 
