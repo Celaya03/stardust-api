@@ -28,7 +28,7 @@ router.post('/producto', async (req, res) => {
     // Validar y actualizar stock
     for (const p of products) {
       // 👇 leer external1-id del body
-      const id_producto = p["external1-id"];
+      const id_producto = p["external_id"];
 
       // Validar existencia en productos usando id_producto
       const result = await pool.query(
