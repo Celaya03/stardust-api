@@ -26,6 +26,7 @@ router.post('/producto', async (req, res) => {
 
     // Validar y actualizar stock
     for (const p of products) {
+       const id_producto = p.product_external_id;
       // Validar existencia en productos usando id_producto
       const result = await pool.query(
         `SELECT id_producto 
@@ -48,7 +49,7 @@ router.post('/producto', async (req, res) => {
 
       // Guardar SOLO product_external_id (que es igual a id_producto)
       productosFinal.push({
-        product_external_id: p.id_producto,
+        product_external_id: id_producto,
         quantity: p.quantity,
         nombre: p.nombre,
         precio_unitario: p.precio_unitario
