@@ -1,3 +1,8 @@
+const express = require('express');
+const router = express.Router();   // 👈 esto falta en tu archivo
+const pool = require('../db');
+const axios = require('axios');
+
 router.post('/producto', async (req, res) => {
   const {
     order_id: externalOrderId,
