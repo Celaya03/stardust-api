@@ -27,7 +27,8 @@ router.post('/producto', async (req, res) => {
 
     // Validar y actualizar stock
     for (const p of products) {
-      const id_producto = p.product_external_id;
+      // 👇 leer external1-id del body
+      const id_producto = p["external1-id"];
 
       // Validar existencia en productos usando id_producto
       const result = await pool.query(
@@ -49,9 +50,9 @@ router.post('/producto', async (req, res) => {
         [p.quantity, id_producto, 3]
       );
 
-      // Guardar SOLO product_external_id (que es igual a id_producto)
+      // Guardar con la misma clave que usabas antes
       productosFinal.push({
-        product_external_id: id_producto,
+        product_external_id: id_producto,  // 👈 backend sigue igual
         quantity: p.quantity,
         nombre: p.nombre,
         precio_unitario: p.precio_unitario
@@ -59,28 +60,19 @@ router.post('/producto', async (req, res) => {
     }
 
     // Insertar la venta como UNA sola fila
-const insertVenta = await pool.query(
-  `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
-   VALUES ($1,$2,$3,$4,$5)
-   ON CONFLICT (order_id) DO UPDATE
-     SET price = EXCLUDED.price,
-         productos = EXCLUDED.productos,
-         payment_status = EXCLUDED.payment_status,
-         created_at = NOW()
-   RETURNING id`,
-  [order_id, 3, price, JSON.stringify(productosFinal), payment_status]
-);
+    const insertVenta = await pool.query(
+      `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (order_id) DO UPDATE
+         SET price = EXCLUDED.price,
+             productos = EXCLUDED.productos,
+             payment_status = EXCLUDED.payment_status,
+             created_at = NOW()
+       RETURNING id`,
+      [order_id, 3, price, JSON.stringify(productosFinal), payment_status]
+    );
 
-const id = insertVenta.rows[0].id;
-
-
-
-res.json({
-  mensaje: "Venta y envío registrados correctamente",
-  order_id,
-  id, // 👈 ahora también lo mandas
-  codigo_seguimiento: codigoSeguimiento
-});
+    const id = insertVenta.rows[0].id;
 
     // Preparar body para el servicio de envíos (usa product_external_id)
     const datosEnvio = {
@@ -110,21 +102,22 @@ res.json({
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
-   await pool.query(
-  `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
-   VALUES ($1,$2,$3,$4,NOW())
-   ON CONFLICT (id_orden_externa) DO UPDATE
-     SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
-         estado_actual = EXCLUDED.estado_actual,
-         ubicacion_actual = EXCLUDED.ubicacion_actual,
-         fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
-  [order_id, codigoSeguimiento, "pendiente", "almacén"]
-);
+    await pool.query(
+      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
+       VALUES ($1,$2,$3,$4,NOW())
+       ON CONFLICT (id_orden_externa) DO UPDATE
+         SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
+             estado_actual = EXCLUDED.estado_actual,
+             ubicacion_actual = EXCLUDED.ubicacion_actual,
+             fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
+      [order_id, codigoSeguimiento, "pendiente", "almacén"]
+    );
 
-
+    // 👉 Respuesta única y final
     res.json({
       mensaje: "Venta y envío registrados correctamente",
       order_id,
+      id,
       codigo_seguimiento: codigoSeguimiento
     });
 
@@ -147,10 +140,9 @@ router.get('/', async (req, res) => {
     );
 
     const ventas = result.rows.map(v => ({
-  ...v,
-  productos: v.productos // 👈 ya es objeto/array
-}));
-
+      ...v,
+      productos: v.productos // 👈 ya es objeto/array
+    }));
 
     res.json(ventas);
   } catch (error) {
