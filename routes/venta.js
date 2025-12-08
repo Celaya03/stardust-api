@@ -70,11 +70,17 @@ router.post('/producto', async (req, res) => {
     );
 
     // Preparar body para el servicio de envíos (usa product_external_id)
-    const datosEnvio = {
-      id_orden_externa: order_id,
-      id_orden_original: `P-${order_id}`,
-      servicio_origen: "Cafetería Stardust",
-      webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
+  const datosEnvio = {
+  id_orden_externa: order_id,
+  id_orden_original: `P-${order_id}`,
+  servicio_origen: "Cafetería Stardust",
+  webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
+  datos_cliente: {
+    nombre: cliente.nombre,
+    direccion: cliente.direccion,
+    telefono: cliente.telefono,
+    email: cliente.email
+  },
       productos: productosFinal.map(p => ({
         sku: p.product_external_id, // externo = interno
         nombre: p.nombre || "Producto",
