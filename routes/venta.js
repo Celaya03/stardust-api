@@ -5,7 +5,7 @@ const axios = require('axios');
 
 router.post('/producto', async (req, res) => {
   const {
-    order_id: externalOrderId, // puede venir del mall
+    order_id: externalOrderId,
     price,
     products,
     payment_status
@@ -15,63 +15,58 @@ router.post('/producto', async (req, res) => {
     let order_id;
 
     if (externalOrderId) {
-      // Caso 2: venta externa → conservar el ID que viene
       order_id = externalOrderId;
     } else {
-      // Caso 1: compra interna → generar automáticamente
       const resultSeq = await pool.query("SELECT nextval('orden_seq') AS numero");
       const numero = resultSeq.rows[0].numero;
       order_id = `ORD-${String(numero).padStart(3, '0')}`;
     }
 
-    // Construir array final con ambos IDs
-const productosFinal = [];
+    const productosFinal = [];
 
-for (const p of products) {
-  const result = await pool.query(
-    `SELECT id_producto 
-     FROM productos 
-     WHERE product_external_id = $1 AND store_id = $2`,
-    [p.product_external_id, 3]
-  );
+    // Validar y actualizar stock
+    for (const p of products) {
+      // Validar existencia en productos usando id_producto
+      const result = await pool.query(
+        `SELECT id_producto 
+         FROM productos 
+         WHERE id_producto = $1 AND store_id = $2`,
+        [p.id_producto, 3]
+      );
 
-  if (result.rows.length === 0) {
-    throw new Error(`Producto con product_external_id ${p.product_external_id} no encontrado`);
-  }
+      if (result.rows.length === 0) {
+        throw new Error(`Producto con id_producto ${p.id_producto} no encontrado`);
+      }
 
-  const id_producto = result.rows[0].id_producto;
+      // Actualizar stock
+      await pool.query(
+        `UPDATE productos
+         SET stock = stock - $1
+         WHERE id_producto = $2 AND store_id = $3`,
+        [p.quantity, p.id_producto, 3]
+      );
 
-  // Actualizar stock
-  await pool.query(
-    `UPDATE productos
-     SET stock = stock - $1
-     WHERE id_producto = $2 AND store_id = $3`,
-    [p.quantity, id_producto, 3]
-  );
+      // Guardar SOLO product_external_id (que es igual a id_producto)
+      productosFinal.push({
+        product_external_id: p.id_producto,
+        quantity: p.quantity,
+        nombre: p.nombre,
+        precio_unitario: p.precio_unitario
+      });
+    }
 
-  // Guardar ambos IDs en el JSON
-  productosFinal.push({
-    id_producto,
-    product_external_id: p.product_external_id,
-    quantity: p.quantity,
-    nombre: p.nombre,
-    precio_unitario: p.precio_unitario
-  });
-}
-
-// Insertar UNA sola fila en ventas
-await pool.query(
-  `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
-   VALUES ($1,$2,$3,$4,$5)`,
-  [
-    order_id,
-    3,
-    price,
-    JSON.stringify(productosFinal), // array completo
-    payment_status
-  ]
-);
-
+    // Insertar la venta como UNA sola fila
+    await pool.query(
+      `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [
+        order_id,
+        3,
+        price,
+        JSON.stringify(productosFinal),
+        payment_status
+      ]
+    );
 
     // Preparar body para el servicio de envíos (usa product_external_id)
     const datosEnvio = {
@@ -80,7 +75,7 @@ await pool.query(
       servicio_origen: "Cafetería Stardust",
       webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
       productos: productosFinal.map(p => ({
-        sku: p.product_external_id, // externo
+        sku: p.product_external_id, // externo = interno
         nombre: p.nombre || "Producto",
         cantidad: p.quantity,
         precio_unitario: p.precio_unitario || price
@@ -95,7 +90,6 @@ await pool.query(
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
-    // Guardar envío inicial en tu BD
     await pool.query(
       `INSERT INTO edo_env (order_id, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
        VALUES ($1,$2,$3,$4,NOW())
@@ -107,7 +101,6 @@ await pool.query(
       [order_id, codigoSeguimiento, "pendiente", "almacén"]
     );
 
-    // Responder al frontend
     res.json({
       mensaje: "Venta y envío registrados correctamente",
       order_id,
@@ -128,7 +121,6 @@ router.get('/', async (req, res) => {
        ORDER BY created_at DESC`
     );
 
-    // Parsear productos JSON para que el frontend reciba array
     const ventas = result.rows.map(v => ({
       ...v,
       productos: JSON.parse(v.productos)
@@ -142,6 +134,7 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
