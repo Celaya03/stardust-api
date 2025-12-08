@@ -24,54 +24,54 @@ router.post('/producto', async (req, res) => {
       order_id = `ORD-${String(numero).padStart(3, '0')}`;
     }
 
-    const productosFinal = [];
+    // Construir array final con ambos IDs
+const productosFinal = [];
 
-    // Validar y actualizar stock
-    for (const p of products) {
-      // Buscar id_producto interno a partir del product_external_id
-      const result = await pool.query(
-        `SELECT id_producto 
-         FROM productos 
-         WHERE product_external_id = $1 AND store_id = $2`,
-        [p.product_external_id, 3]
-      );
+for (const p of products) {
+  const result = await pool.query(
+    `SELECT id_producto 
+     FROM productos 
+     WHERE product_external_id = $1 AND store_id = $2`,
+    [p.product_external_id, 3]
+  );
 
-      if (result.rows.length === 0) {
-        throw new Error(`Producto con product_external_id ${p.product_external_id} no encontrado`);
-      }
+  if (result.rows.length === 0) {
+    throw new Error(`Producto con product_external_id ${p.product_external_id} no encontrado`);
+  }
 
-      const id_producto = result.rows[0].id_producto;
+  const id_producto = result.rows[0].id_producto;
 
-      // Actualizar stock usando id_producto
-      await pool.query(
-        `UPDATE productos
-         SET stock = stock - $1
-         WHERE id_producto = $2 AND store_id = $3`,
-        [p.quantity, id_producto, 3]
-      );
+  // Actualizar stock
+  await pool.query(
+    `UPDATE productos
+     SET stock = stock - $1
+     WHERE id_producto = $2 AND store_id = $3`,
+    [p.quantity, id_producto, 3]
+  );
 
-      // Construir objeto final con ambos IDs
-      productosFinal.push({
-        id_producto,
-        product_external_id: p.product_external_id,
-        quantity: p.quantity,
-        nombre: p.nombre,
-        precio_unitario: p.precio_unitario
-      });
-    }
+  // Guardar ambos IDs en el JSON
+  productosFinal.push({
+    id_producto,
+    product_external_id: p.product_external_id,
+    quantity: p.quantity,
+    nombre: p.nombre,
+    precio_unitario: p.precio_unitario
+  });
+}
 
-    // Insertar la venta como UNA sola fila
-    await pool.query(
-      `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [
-        order_id,
-        3,
-        price,
-        JSON.stringify(productosFinal), // lista con ambos IDs
-        payment_status
-      ]
-    );
+// Insertar UNA sola fila en ventas
+await pool.query(
+  `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
+   VALUES ($1,$2,$3,$4,$5)`,
+  [
+    order_id,
+    3,
+    price,
+    JSON.stringify(productosFinal), // array completo
+    payment_status
+  ]
+);
+
 
     // Preparar body para el servicio de envíos (usa product_external_id)
     const datosEnvio = {
