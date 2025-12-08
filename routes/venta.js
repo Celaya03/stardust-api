@@ -8,7 +8,8 @@ router.post('/producto', async (req, res) => {
     order_id: externalOrderId,
     price,
     products,
-    payment_status
+    payment_status,
+    cliente   // 👈 aquí recibimos el objeto cliente del body
   } = req.body;
 
   try {
@@ -26,7 +27,8 @@ router.post('/producto', async (req, res) => {
 
     // Validar y actualizar stock
     for (const p of products) {
-       const id_producto = p.product_external_id;
+      const id_producto = p.product_external_id;
+
       // Validar existencia en productos usando id_producto
       const result = await pool.query(
         `SELECT id_producto 
@@ -36,7 +38,7 @@ router.post('/producto', async (req, res) => {
       );
 
       if (result.rows.length === 0) {
-        throw new Error(`Producto con id_producto ${p.id_producto} no encontrado`);
+        throw new Error(`Producto con id_producto ${id_producto} no encontrado`);
       }
 
       // Actualizar stock
@@ -59,7 +61,12 @@ router.post('/producto', async (req, res) => {
     // Insertar la venta como UNA sola fila
     await pool.query(
       `INSERT INTO ventas (order_id, store_id, price, productos, payment_status)
-       VALUES ($1,$2,$3,$4,$5)`,
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (order_id) DO UPDATE
+         SET price = EXCLUDED.price,
+             productos = EXCLUDED.productos,
+             payment_status = EXCLUDED.payment_status,
+             created_at = NOW()`,
       [
         order_id,
         3,
@@ -70,17 +77,17 @@ router.post('/producto', async (req, res) => {
     );
 
     // Preparar body para el servicio de envíos (usa product_external_id)
-  const datosEnvio = {
-  id_orden_externa: order_id,
-  id_orden_original: `P-${order_id}`,
-  servicio_origen: "Cafetería Stardust",
-  webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
-  datos_cliente: {
-    nombre: cliente.nombre,
-    direccion: cliente.direccion,
-    telefono: cliente.telefono,
-    email: cliente.email
-  },
+    const datosEnvio = {
+      id_orden_externa: order_id,
+      id_orden_original: `P-${order_id}`,
+      servicio_origen: "Cafetería Stardust",
+      webhook_url: "https://stardust-api-6e7j.onrender.com/api/envios/webhook-envios",
+      datos_cliente: {
+        nombre: cliente?.nombre || "Cliente",
+        direccion: cliente?.direccion || "Sin dirección",
+        telefono: cliente?.telefono || "Sin teléfono",
+        email: cliente?.email || "Sin email"
+      },
       productos: productosFinal.map(p => ({
         sku: p.product_external_id, // externo = interno
         nombre: p.nombre || "Producto",
@@ -115,7 +122,11 @@ router.post('/producto', async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error registrando venta/envío:", err);
+    if (err.response) {
+      console.error("❌ Error en envío:", err.response.status, err.response.data);
+    } else {
+      console.error("❌ Error registrando venta/envío:", err);
+    }
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
@@ -141,6 +152,7 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
