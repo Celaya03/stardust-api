@@ -141,9 +141,10 @@ router.get('/', async (req, res) => {
     );
 
     const ventas = result.rows.map(v => ({
-      ...v,
-      productos: JSON.parse(v.productos)
-    }));
+  ...v,
+  productos: v.productos // 👈 ya es objeto/array
+}));
+
 
     res.json(ventas);
   } catch (error) {
