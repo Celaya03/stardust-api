@@ -138,11 +138,11 @@ router.post('/producto', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT order_id, store_id, price, productos, payment_status, created_at
-       FROM ventas
-       ORDER BY created_at DESC`
-    );
+   const result = await pool.query(
+  `SELECT id, order_id, store_id, price, productos, payment_status, created_at
+   FROM ventas
+   ORDER BY created_at DESC`
+);
 
     const ventas = result.rows.map(v => ({
       ...v,
