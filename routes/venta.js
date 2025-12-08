@@ -92,17 +92,16 @@ router.post('/producto', async (req, res) => {
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
 
     // Guardar envío inicial en tu BD
-  await pool.query(
-  `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
-   VALUES ($1,$2,$3,$4,NOW())
-   ON CONFLICT (id_orden_externa) DO UPDATE
-     SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
-         estado_actual = EXCLUDED.estado_actual,
-         ubicacion_actual = EXCLUDED.ubicacion_actual,
-         fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
-  [order_id, codigoSeguimiento, "pendiente", "almacén"]
-);
-
+    await pool.query(
+      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
+       VALUES ($1,$2,$3,$4,NOW())
+       ON CONFLICT (id_orden_externa) DO UPDATE
+         SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
+             estado_actual = EXCLUDED.estado_actual,
+             ubicacion_actual = EXCLUDED.ubicacion_actual,
+             fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
+      [order_id, codigoSeguimiento, "pendiente", "almacén"]
+    );
 
     // Responder al frontend
     res.json({
@@ -120,42 +119,33 @@ router.post('/producto', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT order_id, store_id, product_external_id, price, quantity, size, color, payment_status, created_at
+      `SELECT 
+         order_id,
+         store_id,
+         payment_status,
+         MAX(created_at) AS created_at,
+         json_agg(
+           json_build_object(
+             'id', id,
+             'product_external_id', product_external_id,
+             'price', price,
+             'quantity', quantity,
+             'size', size,
+             'color', color
+           )
+         ) AS productos
        FROM ventas
+       GROUP BY order_id, store_id, payment_status
        ORDER BY created_at DESC`
     );
 
-    // Agrupar por order_id
-    const agrupadas = {};
-    for (const row of result.rows) {
-      if (!agrupadas[row.order_id]) {
-        agrupadas[row.order_id] = {
-          order_id: row.order_id,
-          store_id: row.store_id,
-          payment_status: row.payment_status,
-          created_at: row.created_at,
-          productos: []
-        };
-      }
-
-      agrupadas[row.order_id].productos.push({
-        product_external_id: row.product_external_id,
-        price: row.price,
-        quantity: row.quantity,
-        size: row.size,
-        color: row.color
-      });
-    }
-
-    // Convertir a arreglo
-    const respuesta = Object.values(agrupadas);
-    res.json(respuesta);
+    res.json(result.rows);
   } catch (error) {
     console.error("❌ Error al consultar ventas agrupadas:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-
 module.exports = router;
+
 
