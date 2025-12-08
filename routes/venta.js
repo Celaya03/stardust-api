@@ -71,7 +71,9 @@ const insertVenta = await pool.query(
   [order_id, 3, price, JSON.stringify(productosFinal), payment_status]
 );
 
-const id = insertVenta.rows[0].id_serial;
+const id = insertVenta.rows[0].id;
+
+
 
 res.json({
   mensaje: "Venta y envío registrados correctamente",
