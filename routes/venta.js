@@ -110,7 +110,7 @@ router.post('/producto', async (req, res) => {
     await pool.query(
       `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
        VALUES ($1,$2,$3,$4,NOW())
-       ON CONFLICT (codigo_seguimiento) DO UPDATE
+       ON CONFLICT (id_orden_externa) DO UPDATE
          SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
              estado_actual = EXCLUDED.estado_actual,
              ubicacion_actual = EXCLUDED.ubicacion_actual,
@@ -138,15 +138,17 @@ router.post('/producto', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-   const result = await pool.query(
-  `SELECT id, order_id, store_id, price, productos, payment_status, created_at
-   FROM ventas
-   ORDER BY created_at DESC`
-);
+    const result = await pool.query(
+      `SELECT v.id, v.order_id, v.store_id, v.price, v.productos, v.payment_status, v.created_at,
+              e.codigo_seguimiento, e.estado_actual, e.ubicacion_actual, e.fecha_actualizacion
+       FROM ventas v
+       LEFT JOIN edo_env e ON v.order_id = e.id_orden_externa
+       ORDER BY v.created_at DESC`
+    );
 
     const ventas = result.rows.map(v => ({
       ...v,
-      productos: v.productos // 👈 ya es objeto/array
+      productos: v.productos
     }));
 
     res.json(ventas);
@@ -155,6 +157,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 module.exports = router;
 

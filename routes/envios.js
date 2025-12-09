@@ -48,7 +48,7 @@ router.get('/envios/:codigo', async (req, res) => {
 router.get('/envios', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT DISTINCT ON (codigo_seguimiento)
+      `SELECT DISTINCT ON (id_orden_externa)
               id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion
        FROM edo_env
        ORDER BY codigo_seguimiento, fecha_actualizacion DESC`
