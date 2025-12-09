@@ -110,7 +110,7 @@ router.post('/producto', async (req, res) => {
     await pool.query(
       `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
        VALUES ($1,$2,$3,$4,NOW())
-       ON CONFLICT (id_orden_externa) DO UPDATE
+       ON CONFLICT (codigo_seguimiento) DO UPDATE
          SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
              estado_actual = EXCLUDED.estado_actual,
              ubicacion_actual = EXCLUDED.ubicacion_actual,
