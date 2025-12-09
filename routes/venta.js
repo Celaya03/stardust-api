@@ -103,17 +103,17 @@ router.post('/producto', async (req, res) => {
     );
 
     const codigoSeguimiento = respuestaEnvios.data.codigo_seguimiento;
+await pool.query(
+  `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
+   VALUES ($1,$2,$3,$4,$5)
+   ON CONFLICT (id_orden_externa) DO UPDATE
+     SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
+         estado_actual = EXCLUDED.estado_actual,
+         ubicacion_actual = EXCLUDED.ubicacion_actual,
+         fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
+  [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion]
+);
 
-    await pool.query(
-      `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
-       VALUES ($1,$2,$3,$4,NOW())
-       ON CONFLICT (id_orden_externa) DO UPDATE
-         SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
-             estado_actual = EXCLUDED.estado_actual,
-             ubicacion_actual = EXCLUDED.ubicacion_actual,
-             fecha_actualizacion = NOW()`,
-      [order_id, codigoSeguimiento, "pendiente", "almacén"]
-    );
 
     // 👉 Armar comprobante
     const comprobante = {
