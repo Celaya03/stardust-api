@@ -26,16 +26,15 @@ router.post('/producto', async (req, res) => {
     const productosFinal = [];
 
     // Validar y actualizar stock
- for (const p of products) {
-  const id_producto = String(
-    p["external_id"] || p.external_id || p.product_external_id
-  );
+    for (const p of products) {
+      const id_producto = String(
+        p["external_id"] || p.external_id || p.product_external_id
+      );
 
-  if (!id_producto) {
-    throw new Error("Producto sin identificador externo válido");
-  }
+      if (!id_producto) {
+        throw new Error("Producto sin identificador externo válido");
+      }
 
-      // Validar existencia en productos usando id_producto
       const result = await pool.query(
         `SELECT id_producto 
          FROM productos 
@@ -47,7 +46,6 @@ router.post('/producto', async (req, res) => {
         throw new Error(`Producto con id_producto ${id_producto} no encontrado`);
       }
 
-      // Actualizar stock
       await pool.query(
         `UPDATE productos
          SET stock = stock - $1
@@ -55,9 +53,8 @@ router.post('/producto', async (req, res) => {
         [p.quantity, id_producto, 3]
       );
 
-      // Guardar con la misma clave que usabas antes
       productosFinal.push({
-        product_external_id: id_producto,  // 👈 backend sigue igual
+        product_external_id: id_producto,
         quantity: p.quantity,
         nombre: p.nombre,
         precio_unitario: p.precio_unitario
@@ -79,7 +76,7 @@ router.post('/producto', async (req, res) => {
 
     const id = insertVenta.rows[0].id;
 
-    // Preparar body para el servicio de envíos (usa product_external_id)
+    // Preparar body para el servicio de envíos
     const datosEnvio = {
       id_orden_externa: order_id,
       id_orden_original: `P-${order_id}`,
@@ -92,7 +89,7 @@ router.post('/producto', async (req, res) => {
         email: cliente?.email || "Sin email"
       },
       productos: productosFinal.map(p => ({
-        sku: p.product_external_id, // externo = interno
+        sku: p.product_external_id,
         nombre: p.nombre || "Producto",
         cantidad: p.quantity,
         precio_unitario: p.precio_unitario || price
@@ -114,16 +111,31 @@ router.post('/producto', async (req, res) => {
          SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
              estado_actual = EXCLUDED.estado_actual,
              ubicacion_actual = EXCLUDED.ubicacion_actual,
-             fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
+             fecha_actualizacion = NOW()`,
       [order_id, codigoSeguimiento, "pendiente", "almacén"]
     );
+
+    // 👉 Armar comprobante
+    const comprobante = {
+      order_id,
+      id,
+      cliente: {
+        nombre: cliente?.nombre || "Cliente",
+        direccion: cliente?.direccion || "Sin dirección",
+        telefono: cliente?.telefono || "Sin teléfono",
+        email: cliente?.email || "Sin email"
+      },
+      productos: productosFinal,
+      total: price,
+      payment_status,
+      codigo_seguimiento: codigoSeguimiento,
+      fecha: new Date().toISOString()
+    };
 
     // 👉 Respuesta única y final
     res.json({
       mensaje: "Venta y envío registrados correctamente",
-      order_id,
-      id,
-      codigo_seguimiento: codigoSeguimiento
+      comprobante
     });
 
   } catch (err) {
@@ -135,29 +147,6 @@ router.post('/producto', async (req, res) => {
     res.status(500).json({ error: "Error registrando venta/envío" });
   }
 });
-
-// Después de guardar en ventas y edo_env
-const comprobante = {
-  order_id,
-  id,
-  cliente: {
-    nombre: cliente?.nombre || "Cliente",
-    direccion: cliente?.direccion || "Sin dirección",
-    telefono: cliente?.telefono || "Sin teléfono",
-    email: cliente?.email || "Sin email"
-  },
-  productos: productosFinal,
-  total: price,
-  payment_status,
-  codigo_seguimiento: codigoSeguimiento,
-  fecha: new Date().toISOString()
-};
-
-res.json({
-  mensaje: "Venta y envío registrados correctamente",
-  comprobante   // 👈 aquí mandas todo el comprobante
-});
-
 
 router.get('/', async (req, res) => {
   try {
@@ -181,8 +170,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-
 module.exports = router;
+
 
 
 
