@@ -136,6 +136,29 @@ router.post('/producto', async (req, res) => {
   }
 });
 
+// Después de guardar en ventas y edo_env
+const comprobante = {
+  order_id,
+  id,
+  cliente: {
+    nombre: cliente?.nombre || "Cliente",
+    direccion: cliente?.direccion || "Sin dirección",
+    telefono: cliente?.telefono || "Sin teléfono",
+    email: cliente?.email || "Sin email"
+  },
+  productos: productosFinal,
+  total: price,
+  payment_status,
+  codigo_seguimiento: codigoSeguimiento,
+  fecha: new Date().toISOString()
+};
+
+res.json({
+  mensaje: "Venta y envío registrados correctamente",
+  comprobante   // 👈 aquí mandas todo el comprobante
+});
+
+
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
