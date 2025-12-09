@@ -13,12 +13,12 @@ router.post('/webhook-envios', async (req, res) => {
 await pool.query(
   `INSERT INTO edo_env (id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion)
    VALUES ($1,$2,$3,$4,NOW())
-   ON CONFLICT (id_orden_externa) DO UPDATE
-     SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
+   ON CONFLICT (id_orden_externa) 
+   DO UPDATE SET codigo_seguimiento = EXCLUDED.codigo_seguimiento,
          estado_actual = EXCLUDED.estado_actual,
          ubicacion_actual = EXCLUDED.ubicacion_actual,
-         fecha_actualizacion = NOW()`,
-  [order_id, codigo_seguimiento, "pendiente", "almacén"]
+         fecha_actualizacion = EXCLUDED.fecha_actualizacion`,
+   [id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion]
 );
 
 
@@ -49,7 +49,7 @@ router.get('/envios/:codigo', async (req, res) => {
 router.get('/envios', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT DISTINCT ON (id_orden_externa)
+      `SELECT DISTINCT ON (codigo_seguimiento)
               id_orden_externa, codigo_seguimiento, estado_actual, ubicacion_actual, fecha_actualizacion
        FROM edo_env
        ORDER BY codigo_seguimiento, fecha_actualizacion DESC`
