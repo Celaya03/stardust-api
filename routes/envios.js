@@ -18,7 +18,7 @@ await pool.query(
          estado_actual = EXCLUDED.estado_actual,
          ubicacion_actual = EXCLUDED.ubicacion_actual,
          fecha_actualizacion = NOW()`,
-  [order_id, codigoSeguimiento, "pendiente", "almacén"]
+  [order_id, codigo_seguimiento, "pendiente", "almacén"]
 );
 
 
